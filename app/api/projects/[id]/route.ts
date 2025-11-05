@@ -2,16 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+// ✅ Next.js 16 compatible route handler (params is now a Promise)
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // ✅ await the params Promise
+
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authHeader)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-
-    const { id } = params;
+    if (!decoded)
+      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
     const project = await prisma.project.findUnique({
       where: { id },
@@ -22,25 +25,32 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       },
     });
 
-    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project)
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
     return NextResponse.json({ project });
   } catch (err: any) {
     console.error("GET /projects/[id] error:", err);
-    return NextResponse.json({ error: "Server error", details: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server error", details: err.message },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // ✅ await the params Promise
+
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authHeader)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 403 });
+    if (!decoded)
+      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
-    const { id } = params;
     const { title, description } = await req.json();
 
     const project = await prisma.project.update({
@@ -51,26 +61,34 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ project });
   } catch (err: any) {
     console.error("PUT /projects/[id] error:", err);
-    return NextResponse.json({ error: "Server error", details: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server error", details: err.message },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // ✅ await the params Promise
+
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authHeader)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-
-    const { id } = params;
+    if (!decoded)
+      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
     await prisma.project.delete({ where: { id } });
 
     return NextResponse.json({ message: "Project deleted successfully" });
   } catch (err: any) {
     console.error("DELETE /projects/[id] error:", err);
-    return NextResponse.json({ error: "Server error", details: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server error", details: err.message },
+      { status: 500 }
+    );
   }
 }
