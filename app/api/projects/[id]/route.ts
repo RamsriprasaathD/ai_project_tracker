@@ -16,21 +16,20 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
-    const project = await prisma.project.findUnique({
+    const task = await prisma.task.findUnique({
       where: { id },
       include: {
-        tasks: { include: { assignee: true } },
-        owner: true,
-        organization: true,
+        project: true,
+        assignee: true,
       },
     });
 
-    if (!project)
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!task)
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-    return NextResponse.json({ project });
+    return NextResponse.json({ task });
   } catch (err: any) {
-    console.error("GET /projects/[id] error:", err);
+    console.error("GET /tasks/[id] error:", err);
     return NextResponse.json(
       { error: "Server error", details: err.message },
       { status: 500 }
@@ -40,7 +39,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params; // ✅ await the params Promise
+    const { id } = await context.params;
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
@@ -51,16 +50,16 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
-    const { title, description } = await req.json();
+    const { title, description, status } = await req.json();
 
-    const project = await prisma.project.update({
+    const task = await prisma.task.update({
       where: { id },
-      data: { title, description },
+      data: { title, description, status },
     });
 
-    return NextResponse.json({ project });
+    return NextResponse.json({ task });
   } catch (err: any) {
-    console.error("PUT /projects/[id] error:", err);
+    console.error("PUT /tasks/[id] error:", err);
     return NextResponse.json(
       { error: "Server error", details: err.message },
       { status: 500 }
@@ -70,7 +69,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params; // ✅ await the params Promise
+    const { id } = await context.params;
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
@@ -81,11 +80,11 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
-    await prisma.project.delete({ where: { id } });
+    await prisma.task.delete({ where: { id } });
 
-    return NextResponse.json({ message: "Project deleted successfully" });
+    return NextResponse.json({ message: "Task deleted successfully" });
   } catch (err: any) {
-    console.error("DELETE /projects/[id] error:", err);
+    console.error("DELETE /tasks/[id] error:", err);
     return NextResponse.json(
       { error: "Server error", details: err.message },
       { status: 500 }
