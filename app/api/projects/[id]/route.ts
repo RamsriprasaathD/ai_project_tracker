@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
 
-// ✅ Next.js 16 compatible route handler (params is now a Promise)
+// ✅ Fully Next.js 16 compatible (params is a Promise)
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params; // ✅ await the params Promise
+    const { id } = await context.params; // ✅ await params
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
