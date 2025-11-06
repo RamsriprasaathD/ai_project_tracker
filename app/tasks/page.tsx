@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import CreateTaskModal from "../components/modals/CreateTaskModal";
 
 interface Task {
   id: string;
@@ -11,8 +12,10 @@ interface Task {
   description: string;
   status: string;
   project?: { title: string };
-  assignee?: { name: string };
+  assignee?: { name: string; email: string };
+  creator?: { name: string; email: string };
   aiRiskScore?: number;
+  dueDate?: string;
 }
 
 export default function TasksPage() {
@@ -20,13 +23,28 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [newTask, setNewTask] = useState({
-    title: "",
-    description: "",
-    projectId: "",
-    assigneeId: "",
-  });
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // 🧠 Fetch Current User
+  async function fetchCurrentUser() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return router.push("/login");
+
+      const res = await fetch("/api/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.user) {
+        setCurrentUser(data.user);
+        localStorage.setItem("userRole", data.user.role);
+      }
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    }
+  }
 
   // 🧠 Fetch all tasks
   async function fetchTasks() {
@@ -66,47 +84,13 @@ export default function TasksPage() {
     }
   }
 
-  // ➕ Create a new task
-  async function createTask(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newTask.title) return alert("Task title is required");
-
-    try {
-      setCreating(true);
-      const token = localStorage.getItem("token");
-      const userRole = localStorage.getItem("userRole");
-
-      // Check permissions client-side first
-      if (!userRole || (userRole !== "MANAGER" && userRole !== "TEAM_LEAD" && userRole !== "INDIVIDUAL")) {
-        throw new Error("You don't have permission to create tasks. Only managers, team leads, and individuals can create tasks.");
-      }
-
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newTask),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create task");
-
-      setNewTask({ title: "", description: "", projectId: "", assigneeId: "" });
-      fetchTasks(); // Refresh list
-    } catch (err) {
-      console.error(err);
-      alert("Error creating task");
-    } finally {
-      setCreating(false);
-    }
-  }
-
   useEffect(() => {
+    fetchCurrentUser();
     fetchTasks();
     fetchProjects();
   }, []);
+
+  const canCreateTasks = currentUser?.role !== "TEAM_MEMBER";
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
@@ -122,53 +106,36 @@ export default function TasksPage() {
             Task Management
           </h1>
 
-          {/* ➕ Create Task Form */}
-          <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
-            <h2 className="text-xl font-semibold text-blue-400 mb-4 flex items-center gap-2">
-              ➕ Create New Task
-            </h2>
-            <form
-              onSubmit={createTask}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              <input
-                type="text"
-                placeholder="Task Title"
-                value={newTask.title}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, title: e.target.value })
-                }
-                className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={newTask.projectId}
-                onChange={e => setNewTask({ ...newTask, projectId: e.target.value })}
-                className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                required
-              >
-                <option value="">Select Project</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>{project.title}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Description (optional)"
-                value={newTask.description}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, description: e.target.value })
-                }
-                className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button
-                type="submit"
-                disabled={creating}
-                className="col-span-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 p-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
-              >
-                {creating ? "Creating..." : "Create Task"}
-              </button>
-            </form>
-          </div>
+          {/* Create Task Section */}
+          {canCreateTasks ? (
+            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-green-400 flex items-center gap-2">
+                  ➕ Create New Task
+                </h2>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                >
+                  Create Task
+                </button>
+              </div>
+              <p className="text-gray-400 text-sm">
+                {currentUser?.role === "MANAGER" 
+                  ? "Create tasks and assign them to your Team Leads"
+                  : currentUser?.role === "TEAM_LEAD"
+                  ? "Create tasks and assign them to your Team Members"
+                  : "Create and manage your personal tasks"}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
+              <h2 className="text-xl font-semibold text-yellow-400 mb-2">Assigned Tasks</h2>
+              <p className="text-gray-400 text-sm">
+                View tasks assigned to you by your Team Lead. You can create sub-tasks for better organization.
+              </p>
+            </div>
+          )}
 
           {/* 🧾 Task List */}
           <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -188,9 +155,28 @@ export default function TasksPage() {
                   <p className="text-gray-400 text-sm mb-2">
                     {task.description || "No description provided."}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {task.project?.title ? `Project: ${task.project.title}` : ""}
-                  </p>
+                  <div className="space-y-1">
+                    {task.project?.title && (
+                      <p className="text-xs text-gray-500">
+                        📁 Project: {task.project.title}
+                      </p>
+                    )}
+                    {task.dueDate && (
+                      <p className="text-xs text-orange-400">
+                        📅 Due: {new Date(task.dueDate).toLocaleDateString()}
+                      </p>
+                    )}
+                    {task.assignee && (
+                      <p className="text-xs text-cyan-400">
+                        👤 Assigned to: {task.assignee.name || task.assignee.email}
+                      </p>
+                    )}
+                    {task.creator && currentUser?.role !== "INDIVIDUAL" && (
+                      <p className="text-xs text-purple-400">
+                        📋 Created by: {task.creator.name || task.creator.email}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Status Tag */}
                   <span
@@ -214,18 +200,34 @@ export default function TasksPage() {
                     </div>
                   )}
 
-                  {/* Assignee */}
-                  <p className="mt-3 text-sm text-gray-400 italic">
-                    {task.assignee
-                      ? `👤 Assigned to: ${task.assignee.name}`
-                      : "Unassigned"}
-                  </p>
+                  {/* Action hint for team members */}
+                  {currentUser?.role === "TEAM_MEMBER" && task.assignee?.email === currentUser?.email && (
+                    <p className="mt-3 text-xs text-green-400 italic">
+                      💡 You can create private sub-tasks to break down this task (only you can see them)
+                    </p>
+                  )}
                 </div>
               ))
             )}
           </div>
         </main>
       </div>
+
+      {/* Create Task Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="max-w-md w-full">
+            <CreateTaskModal
+              currentUser={currentUser}
+              onClose={() => setShowCreateModal(false)}
+              onSuccess={() => {
+                setShowCreateModal(false);
+                fetchTasks();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

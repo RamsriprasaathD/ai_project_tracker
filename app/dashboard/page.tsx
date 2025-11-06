@@ -5,228 +5,410 @@ import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import ProjectTable from "../components/ProjectTable";
-import InsightsPanel from "../components/InsightsPanel";
-import { ITask, IUser } from "../types/types";
+import TaskTable from "../components/TaskTable";
+import TeamLeadInsights from "../components/TeamLeadInsights";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<IUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [teamLeads, setTeamLeads] = useState<any[]>([]);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [assignedProjects, setAssignedProjects] = useState<any[]>([]); // For TL: Projects assigned by manager
+  const [ownProjects, setOwnProjects] = useState<any[]>([]); // For TL: Projects created by TL
   const [tasks, setTasks] = useState<any[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [teamLeads, setTeamLeads] = useState<any[]>([]); // For Manager: Team leads in organization
+  const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null); // For TL insights modal
+  const [stats, setStats] = useState({ totalProjects: 0, totalTasks: 0, completedTasks: 0, inProgressTasks: 0 });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch current user
+  async function fetchCurrentUser() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return router.push("/login");
+
+      const res = await fetch("/api/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.user) {
+        setCurrentUser(data.user);
+        localStorage.setItem("userRole", data.user.role);
+      }
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    }
+  }
+
+  // Fetch projects
+  async function fetchProjects() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch("/api/projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        const allProjects = data.projects || [];
+        setProjects(allProjects);
+        
+        // For Team Leads, separate projects
+        if (currentUser?.role === "TEAM_LEAD") {
+          const assigned = allProjects.filter((p: any) => 
+            p.assignedToId === currentUser.id && p.ownerId !== currentUser.id
+          );
+          const own = allProjects.filter((p: any) => 
+            p.ownerId === currentUser.id
+          );
+          setAssignedProjects(assigned);
+          setOwnProjects(own);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    }
+  }
+
+  // Fetch tasks
+  async function fetchTasks() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch("/api/tasks", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setTasks(data.tasks || []);
+      }
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+    }
+  }
+
+  // Fetch team leads (for Manager only)
+  async function fetchTeamLeads() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch("/api/assignable-users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Filter only team leads
+        const tls = (data.users || []).filter((u: any) => u.role === "TEAM_LEAD");
+        setTeamLeads(tls);
+      }
+    } catch (err) {
+      console.error("Error fetching team leads:", err);
+    }
+  }
+
+  // Calculate stats based on current projects and tasks
+  function calculateStats(projectsList: any[], tasksList: any[]) {
+    const completed = tasksList.filter((t: any) => t.status === "DONE").length;
+    const inProgress = tasksList.filter((t: any) => t.status === "IN_PROGRESS").length;
+    
+    setStats({
+      totalProjects: projectsList.length,
+      totalTasks: tasksList.length,
+      completedTasks: completed,
+      inProgressTasks: inProgress,
+    });
+  }
+
+  async function loadData() {
+    setLoading(true);
+    await fetchCurrentUser();
+    const token = localStorage.getItem("token");
+    
+    // Fetch projects
+    const projectsRes = await fetch("/api/projects", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const projectsData = await projectsRes.json();
+    const fetchedProjects = projectsData.projects || [];
+    setProjects(fetchedProjects);
+    
+    // Separate projects for Team Lead
+    if (currentUser?.role === "TEAM_LEAD") {
+      const assigned = fetchedProjects.filter((p: any) => 
+        p.assignedToId === currentUser.id && p.ownerId !== currentUser.id
+      );
+      const own = fetchedProjects.filter((p: any) => 
+        p.ownerId === currentUser.id
+      );
+      setAssignedProjects(assigned);
+      setOwnProjects(own);
+    }
+    
+    // Fetch tasks
+    const tasksRes = await fetch("/api/tasks", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const tasksData = await tasksRes.json();
+    const fetchedTasks = tasksData.tasks || [];
+    setTasks(fetchedTasks);
+    
+    // Fetch team leads for Manager
+    if (currentUser?.role === "MANAGER") {
+      await fetchTeamLeads();
+    }
+    
+    // Calculate stats after both are loaded
+    calculateStats(fetchedProjects, fetchedTasks);
+    
+    setLoading(false);
+  }
+
+  async function refreshData() {
+    await fetchProjects();
+    await fetchTasks();
+  }
 
   useEffect(() => {
-    async function fetchUserAndData() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setErrorMsg("Session expired. Please log in again.");
-        setTimeout(() => router.push("/login"), 1500);
-        return;
-      }
+    loadData();
+  }, []);
 
-      try {
-        // 🔹 Fetch user data
-        const res = await fetch("/api/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Invalid token");
-        const userData = data.user;
-        setUser(userData);
-
-        // 🧩 Manager: Get organization + TLs
-        if (userData.role === "MANAGER") {
-          const orgRes = await fetch(`/api/orgs/by-manager?managerId=${userData.id}`);
-          let orgData = null;
-          try {
-            orgData = await orgRes.json();
-          } catch {
-            console.warn("⚠️ Could not parse /api/orgs/by-manager response (empty or invalid)");
-          }
-
-          if (orgData?.success && orgData.organization) {
-            const org = orgData.organization;
-            userData.organization = org;
-            setUser({ ...userData });
-
-            // Fetch team leads in this organization
-            const tlRes = await fetch(`/api/orgs/teamleads?orgName=${encodeURIComponent(org.name)}`);
-            const tlData = await tlRes.json();
-            setTeamLeads(tlData.teamLeads || []);
-
-            // Fetch all org users
-            const usersRes = await fetch(`/api/users?orgName=${encodeURIComponent(org.name)}`);
-            const usersData = await usersRes.json();
-            setAllUsers(usersData.users || []);
-          }
-        }
-
-        // 🧩 Team Lead: Get team members + tasks
-        if (userData.role === "TEAM_LEAD") {
-          const tmRes = await fetch(`/api/users?teamLeadId=${userData.id}`);
-          const tmData = await tmRes.json();
-          setTeamMembers(tmData.teamMembers || []);
-          setAllUsers(tmData.teamMembers || []);
-
-          const taskRes = await fetch("/api/tasks", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const taskData = await taskRes.json();
-          setTasks(taskData.tasks || []);
-        }
-
-        // 🧩 Manager or TL: Load their tasks
-        if (["MANAGER", "TEAM_LEAD"].includes(userData.role)) {
-          const taskRes = await fetch("/api/tasks", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const taskData = await taskRes.json();
-          setTasks(taskData.tasks || []);
-        }
-      } catch (err: any) {
-        console.error("❌ Dashboard fetch error:", err.message);
-        setErrorMsg("Invalid or expired session. Redirecting...");
-        localStorage.removeItem("token");
-        setTimeout(() => router.push("/login"), 1500);
-      } finally {
-        setLoading(false);
-      }
+  // Recalculate stats whenever projects or tasks change
+  useEffect(() => {
+    if (projects.length >= 0 || tasks.length >= 0) {
+      calculateStats(projects, tasks);
     }
-
-    fetchUserAndData();
-  }, [router]);
-
-  if (loading)
-    return (
-      <div className="h-screen flex flex-col justify-center items-center bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-400 text-lg">
-        <div className="flex gap-2 mb-4">
-          <span className="w-3 h-3 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-          <span className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-          <span className="w-3 h-3 bg-purple-400 rounded-full animate-bounce" />
-        </div>
-        Loading your dashboard...
-      </div>
-    );
-
-  if (!user)
-    return (
-      <div className="h-screen flex flex-col justify-center items-center bg-gray-950 text-red-400">
-        <p className="text-lg font-semibold mb-2">{errorMsg}</p>
-        <p className="text-gray-500 text-sm">Redirecting to login...</p>
-      </div>
-    );
+  }, [projects, tasks]);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+      {/* Sidebar */}
       <Sidebar />
+
+      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
 
-        <main className="p-6 overflow-y-auto space-y-8 max-w-7xl mx-auto">
-          {/* Welcome Section */}
-          <section className="bg-gradient-to-r from-blue-900/80 via-gray-900/90 to-purple-900/80 border border-blue-800/40 p-8 rounded-3xl shadow-2xl mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-extrabold mb-1 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">
-                Welcome, {user.name || "User"} 👋
-              </h1>
-              <p className="text-gray-300 text-lg">
-                <span className="font-semibold text-blue-300">{user.role}</span>
-                {user.organization ? (
-                  <>
-                    {" | Organization: "}
-                    <span className="text-cyan-300 font-semibold">
-                      {user.organization.name}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    {" | "}
-                    <span className="text-gray-400">No Organization</span>
-                  </>
-                )}
-                {user.role === "TEAM_LEAD" && user.tlIdWithinOrg && (
-                  <>
-                    {" | "}
-                    <span className="text-green-300 font-semibold">
-                      TL ID: {user.tlIdWithinOrg}
-                    </span>
-                  </>
-                )}
-              </p>
+        <main className="flex-1 p-6 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-400 text-xl animate-pulse">Loading dashboard...</p>
             </div>
-            <div className="w-full md:w-auto flex-shrink-0">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-700/60 to-purple-700/60 p-4 shadow-xl flex flex-col items-center">
-                <span className="text-5xl">🚀</span>
-                <span className="text-xs text-gray-200 mt-2">AI Project Tracker</span>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent mb-2">
+                  Dashboard
+                </h1>
+                <p className="text-gray-400">
+                  Welcome back, {currentUser?.name || currentUser?.email}! 
+                  <span className="ml-2 px-2 py-1 bg-blue-900/50 text-blue-300 rounded text-sm">
+                    {currentUser?.role?.replace("_", " ")}
+                  </span>
+                </p>
               </div>
-            </div>
-          </section>
 
-          {/* AI Insights Panel */}
-          <div className="lg:absolute right-8 top-8 w-full max-w-xs lg:max-w-sm z-10">
-            <InsightsPanel projectId={selectedProjectId} />
-          </div>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-300 text-sm font-medium">Total Projects</p>
+                      <p className="text-3xl font-bold text-white mt-2">{stats.totalProjects}</p>
+                    </div>
+                    <div className="text-blue-400 text-4xl">📁</div>
+                  </div>
+                </div>
 
-          {/* Manager Section */}
-          {user.role === "MANAGER" && (
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ProjectTable tasks={tasks} users={allUsers} canAssign={true} />
-              <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 shadow-md backdrop-blur-xl">
-                <h2 className="text-xl font-semibold mb-4 text-cyan-400">
-                  Team Leaders 👥
-                </h2>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                  {teamLeads.length > 0 ? (
-                    teamLeads.map((tl) => (
-                      <div
-                        key={tl.tlIdWithinOrg}
-                        className="bg-gray-800 p-3 rounded-lg flex flex-col mb-2"
+                <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-300 text-sm font-medium">Total Tasks</p>
+                      <p className="text-3xl font-bold text-white mt-2">{stats.totalTasks}</p>
+                    </div>
+                    <div className="text-green-400 text-4xl">✓</div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-300 text-sm font-medium">In Progress</p>
+                      <p className="text-3xl font-bold text-white mt-2">{stats.inProgressTasks}</p>
+                    </div>
+                    <div className="text-purple-400 text-4xl">⚡</div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-cyan-900/50 to-cyan-800/30 border border-cyan-700 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-cyan-300 text-sm font-medium">Completed</p>
+                      <p className="text-3xl font-bold text-white mt-2">{stats.completedTasks}</p>
+                    </div>
+                    <div className="text-cyan-400 text-4xl">🎉</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Role-specific message */}
+              <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700 rounded-xl p-4 mb-8">
+                <p className="text-gray-300 text-sm">
+                  {currentUser?.role === "MANAGER" && "You can create projects and assign them to your Team Leads."}
+                  {currentUser?.role === "TEAM_LEAD" && "You can create tasks and assign them to your Team Members."}
+                  {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned tasks and create sub-tasks to organize your work."}
+                  {currentUser?.role === "INDIVIDUAL" && "You have full control over your personal projects and tasks."}
+                </p>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {(currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL") && (
+                  <button
+                    onClick={() => router.push("/projects")}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 p-4 rounded-xl text-left transition-all duration-200 shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.4)]"
+                  >
+                    <div className="text-2xl mb-2">➕</div>
+                    <div className="font-semibold text-lg">Create New Project</div>
+                    <div className="text-sm text-blue-100 mt-1">Start organizing your work</div>
+                  </button>
+                )}
+                
+                {currentUser?.role !== "TEAM_MEMBER" && (
+                  <button
+                    onClick={() => router.push("/tasks")}
+                    className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 p-4 rounded-xl text-left transition-all duration-200 shadow-lg hover:shadow-[0_0_30px_rgba(34,197,94,0.4)]"
+                  >
+                    <div className="text-2xl mb-2">✓</div>
+                    <div className="font-semibold text-lg">Create New Task</div>
+                    <div className="text-sm text-green-100 mt-1">Add a task to track</div>
+                  </button>
+                )}
+              </div>
+
+              {/* Team Lead Insights Boxes (Manager Only) */}
+              {currentUser?.role === "MANAGER" && teamLeads.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-semibold mb-4 text-indigo-400">
+                    Team Lead Performance
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {teamLeads.map((tl) => (
+                      <button
+                        key={tl.id}
+                        onClick={() => setSelectedTeamLead({ id: tl.id, name: tl.name || tl.email })}
+                        className="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 border border-indigo-700 hover:border-indigo-500 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                       >
-                        <span className="font-semibold text-blue-300">
-                          {tl.name || "Unnamed TL"}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          TL ID: {tl.tlIdWithinOrg}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">No team leaders found.</p>
-                  )}
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-white text-lg">{tl.name || tl.email}</h3>
+                          <span className="text-indigo-400 text-2xl">📊</span>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-2">
+                          {tl.tlIdWithinOrg ? `TL-${tl.tlIdWithinOrg}` : "Team Lead"}
+                        </p>
+                        <div className="text-xs text-indigo-300">
+                          Click to view detailed insights
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </section>
-          )}
+              )}
 
-          {/* Team Lead Section */}
-          {user.role === "TEAM_LEAD" && (
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ProjectTable tasks={tasks} users={allUsers} canAssign={true} />
-              <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 shadow-md backdrop-blur-xl">
-                <h2 className="text-xl font-semibold mb-4 text-green-400">
-                  Your Team Members 👥
-                </h2>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                  {teamMembers.length > 0 ? (
-                    teamMembers.map((tm) => (
-                      <div key={tm.id} className="bg-gray-800 p-3 rounded-lg flex flex-col mb-2">
-                        <span className="font-semibold text-green-300">{tm.name || tm.email}</span>
-                        <span className="text-xs text-gray-400">{tm.email}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">No team members found.</p>
+              {/* Recent Projects & Tasks */}
+              {currentUser?.role === "TEAM_LEAD" ? (
+                // Team Lead View: Separate sections
+                <>
+                  {/* Manager Assigned Projects */}
+                  {assignedProjects.length > 0 && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                        Projects Assigned by Manager
+                        <span className="text-sm text-gray-400 font-normal">({assignedProjects.length})</span>
+                      </h2>
+                      <ProjectTable 
+                        projects={assignedProjects} 
+                        currentUser={currentUser} 
+                        onRefresh={refreshData}
+                      />
+                    </div>
                   )}
+
+                  {/* Own Projects */}
+                  {ownProjects.length > 0 && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-semibold mb-4 text-purple-400 flex items-center gap-2">
+                        My Projects
+                        <span className="text-sm text-gray-400 font-normal">({ownProjects.length})</span>
+                      </h2>
+                      <ProjectTable 
+                        projects={ownProjects} 
+                        currentUser={currentUser} 
+                        onRefresh={refreshData}
+                      />
+                    </div>
+                  )}
+
+                  {/* Recent Tasks */}
+                  <div>
+                    <h2 className="text-2xl font-semibold mb-4 text-blue-400">Recent Tasks</h2>
+                    <TaskTable 
+                      tasks={tasks.slice(0, 10)} 
+                      currentUser={currentUser} 
+                      onRefresh={refreshData}
+                    />
+                  </div>
+                </>
+              ) : currentUser?.role === "TEAM_MEMBER" ? (
+                // Team Member View: Only tasks, no project hierarchy
+                <div>
+                  <h2 className="text-2xl font-semibold mb-4 text-green-400">My Assigned Tasks</h2>
+                  <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-gray-300">
+                      Focus on completing your assigned tasks. You can create private sub-tasks to organize your work.
+                    </p>
+                  </div>
+                  <TaskTable 
+                    tasks={tasks} 
+                    currentUser={currentUser} 
+                    onRefresh={refreshData}
+                  />
                 </div>
-              </div>
-            </section>
+              ) : (
+                // Manager/Individual View: Standard layout
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ProjectTable 
+                    projects={projects.slice(0, 5)} 
+                    currentUser={currentUser} 
+                    onRefresh={refreshData}
+                  />
+                  
+                  <TaskTable 
+                    tasks={tasks.slice(0, 5)} 
+                    currentUser={currentUser} 
+                    onRefresh={refreshData}
+                  />
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
+
+      {/* Team Lead Insights Modal */}
+      {selectedTeamLead && (
+        <TeamLeadInsights
+          teamLeadId={selectedTeamLead.id}
+          teamLeadName={selectedTeamLead.name}
+          onClose={() => setSelectedTeamLead(null)}
+        />
+      )}
     </div>
   );
 }

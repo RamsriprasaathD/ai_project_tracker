@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import InsightsPanel from "../components/InsightsPanel";
+import CreateProjectModal from "../components/modals/CreateProjectModal";
 
 interface Project {
   id: string;
   title: string;
   description: string;
   createdAt: string;
+  assignedTo?: { name?: string; email: string };
+  owner?: { name?: string; email: string };
 }
 
 export default function ProjectsPage() {
@@ -18,8 +21,29 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [newProject, setNewProject] = useState({ title: "", description: "" });
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // 🧠 Fetch Current User
+  async function fetchCurrentUser() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return router.push("/login");
+
+      const res = await fetch("/api/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.user) {
+        setCurrentUser(data.user);
+        // Store role in localStorage for quick access
+        localStorage.setItem("userRole", data.user.role);
+      }
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    }
+  }
 
   // 🧠 Fetch Projects
   async function fetchProjects() {
@@ -43,40 +67,12 @@ export default function ProjectsPage() {
     }
   }
 
-  // ➕ Create Project
-  async function createProject(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newProject.title) return alert("Project title is required");
-
-    try {
-      setCreating(true);
-      const token = localStorage.getItem("token");
-
-      const res = await fetch("/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newProject),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create project");
-
-      setNewProject({ title: "", description: "" });
-      fetchProjects(); // refresh
-    } catch (err) {
-      console.error(err);
-      alert("Error creating project");
-    } finally {
-      setCreating(false);
-    }
-  }
-
   useEffect(() => {
+    fetchCurrentUser();
     fetchProjects();
   }, []);
+
+  const canCreateProjects = currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL";
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
@@ -93,38 +89,35 @@ export default function ProjectsPage() {
           </h1>
 
           {/* Create Project Section */}
-          <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
-            <h2 className="text-xl font-semibold text-blue-400 mb-4 flex items-center gap-2">
-              ➕ Create New Project
-            </h2>
-            <form onSubmit={createProject} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Project Title"
-                value={newProject.title}
-                onChange={(e) =>
-                  setNewProject({ ...newProject, title: e.target.value })
-                }
-                className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="Short Description"
-                value={newProject.description}
-                onChange={(e) =>
-                  setNewProject({ ...newProject, description: e.target.value })
-                }
-                className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button
-                type="submit"
-                disabled={creating}
-                className="col-span-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 p-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
-              >
-                {creating ? "Creating..." : "Create Project"}
-              </button>
-            </form>
-          </div>
+          {canCreateProjects ? (
+            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
+                  ➕ Create New Project
+                </h2>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+                >
+                  Create Project
+                </button>
+              </div>
+              <p className="text-gray-400 text-sm">
+                {currentUser?.role === "MANAGER" 
+                  ? "Create projects and assign them to your Team Leads"
+                  : "Create and manage your personal projects"}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
+              <h2 className="text-xl font-semibold text-yellow-400 mb-2">Assigned Projects</h2>
+              <p className="text-gray-400 text-sm">
+                {currentUser?.role === "TEAM_LEAD" 
+                  ? "View projects assigned to you by your Manager"
+                  : "View projects and tasks assigned to you by your Team Lead"}
+              </p>
+            </div>
+          )}
 
           {/* Project List */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -149,9 +142,21 @@ export default function ProjectsPage() {
                   <p className="text-gray-400 text-sm mt-1 mb-2">
                     {p.description || "No description provided."}
                   </p>
-                  <p className="text-gray-500 text-xs">
-                    Created on {new Date(p.createdAt).toLocaleDateString()}
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-gray-500 text-xs">
+                      Created: {new Date(p.createdAt).toLocaleDateString()}
+                    </p>
+                    {p.assignedTo && (
+                      <p className="text-cyan-400 text-xs">
+                        👤 Assigned to: {p.assignedTo.name || p.assignedTo.email}
+                      </p>
+                    )}
+                    {p.owner && currentUser?.role !== "INDIVIDUAL" && (
+                      <p className="text-purple-400 text-xs">
+                        📋 Created by: {p.owner.name || p.owner.email}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))
             )}
@@ -165,6 +170,22 @@ export default function ProjectsPage() {
           )}
         </main>
       </div>
+
+      {/* Create Project Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="max-w-md w-full">
+            <CreateProjectModal
+              currentUser={currentUser}
+              onClose={() => setShowCreateModal(false)}
+              onSuccess={() => {
+                setShowCreateModal(false);
+                fetchProjects();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,109 +1,152 @@
-// ramsriprasaath's CODE — /api/tasks/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/jwt";
+import { getUserFromToken } from "@/lib/auth";
 
+/**
+ * GET /api/tasks
+ */
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token);
-    if (!decoded)
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    const projectId = url.searchParams.get("projectId");
 
-    const { id: userId, role } = decoded as any;
-
-    let tasks;
-
-    if (role === "MANAGER") {
-      // Managers can view all tasks
-      tasks = await prisma.task.findMany({
-        include: { project: true, assignee: true, creator: true },
-        orderBy: { createdAt: "desc" },
+    if (id) {
+      const task = await prisma.task.findUnique({
+        where: { id },
+        include: { assignee: true, creator: true, project: true, subtasks: true },
       });
-    } else if (role === "TEAM_LEAD") {
-      // TL sees tasks they created or assigned
+      
+      // Hide subtasks from everyone except the assigned team member
+      if (task && task.subtasks && user.role !== "TEAM_MEMBER") {
+        task.subtasks = [];
+      } else if (task && task.subtasks && user.role === "TEAM_MEMBER" && task.assigneeId !== user.id) {
+        task.subtasks = [];
+      }
+      
+      return NextResponse.json({ task });
+    }
+
+    let tasks: any[] = [];
+
+    if (user.role === "MANAGER") {
+      const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
+      if (org) {
+        tasks = await prisma.task.findMany({
+          where: { project: { organizationId: org.id } },
+          include: { assignee: true, creator: true, project: true },
+          orderBy: { createdAt: "desc" },
+        });
+      }
+    } else if (user.role === "TEAM_LEAD") {
       tasks = await prisma.task.findMany({
         where: {
-          OR: [{ creatorId: userId }, { assignee: { teamLeadId: userId } }],
+          OR: [
+            { assigneeId: user.id },
+            { creatorId: user.id },
+            { assignee: { teamLeadId: user.id } },
+          ],
+          AND: projectId ? [{ projectId }] : undefined,
         },
-        include: { project: true, assignee: true },
+        include: { assignee: true, creator: true, project: true },
         orderBy: { createdAt: "desc" },
       });
-    } else {
-      // Team member sees only assigned tasks
+    } else if (user.role === "TEAM_MEMBER") {
       tasks = await prisma.task.findMany({
-        where: { assigneeId: userId },
-        include: { project: true },
+        where: { assigneeId: user.id },
+        include: { assignee: true, creator: true, project: true, subtasks: true },
+        orderBy: { createdAt: "desc" },
+      });
+    } else if (user.role === "INDIVIDUAL") {
+      tasks = await prisma.task.findMany({
+        where: { OR: [{ assigneeId: user.id }, { creatorId: user.id }] },
+        include: { assignee: true, creator: true, project: true },
         orderBy: { createdAt: "desc" },
       });
     }
+    
+    // Note: Subtasks are only visible to team members who are assigned to the task
+    // This ensures privacy - team leads and managers cannot see how team members break down their work
 
     return NextResponse.json({ tasks });
   } catch (err: any) {
-    console.error("GET /tasks error:", err);
-    return NextResponse.json(
-      { error: "Server error", details: err.message },
-      { status: 500 }
-    );
+    console.error("❌ /api/tasks GET error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }
 
+/**
+ * POST /api/tasks
+ * Body: { title, description?, projectId?, assigneeId, dueDate? }
+ * - MANAGER: Can create tasks and assign to TEAM_LEADs
+ * - TEAM_LEAD: Can create tasks and assign to TEAM_MEMBERs
+ * - INDIVIDUAL: Can create tasks for themselves
+ * - TEAM_MEMBER: CANNOT create tasks (only subtasks)
+ */
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token);
-    if (!decoded)
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
+    const { title, description, projectId, assigneeId, dueDate } = await req.json();
+    if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
-    const { id: userId, role } = decoded as any;
-
-
-    // Allow MANAGER, TEAM_LEAD, and INDIVIDUAL to create tasks
-    if (!role || (role !== "MANAGER" && role !== "TEAM_LEAD" && role !== "INDIVIDUAL")) {
+    // TEAM_MEMBER cannot create tasks
+    if (user.role === "TEAM_MEMBER") {
       return NextResponse.json({ 
-        error: "Permission denied", 
-        details: "Only managers, team leads, and individuals can create tasks",
-        userRole: role 
+        error: "Team members cannot create tasks. You can only create subtasks for assigned tasks." 
       }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { title, description, projectId, assigneeId, dueDate } = body;
-
-
-    if (!title || !projectId) {
-      return NextResponse.json(
-        { error: "Title and Project ID are required" },
-        { status: 400 }
-      );
+    // INDIVIDUAL can only create tasks for themselves
+    if (user.role === "INDIVIDUAL") {
+      const task = await prisma.task.create({
+        data: {
+          title,
+          description,
+          projectId: projectId || null,
+          assigneeId: user.id,
+          creatorId: user.id,
+          dueDate: dueDate ? new Date(dueDate) : null,
+        },
+      });
+      return NextResponse.json({ success: true, task });
     }
 
-    // Only allow TLs to assign tasks to their own team members
-    if (role === "TEAM_LEAD") {
-      if (!assigneeId) {
-        return NextResponse.json({ error: "Assignee is required for team lead." }, { status: 400 });
-      }
-      const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
-      if (!assignee || assignee.teamLeadId !== userId) {
-        return NextResponse.json({ error: "You can only assign tasks to your own team members." }, { status: 403 });
+    // MANAGER and TEAM_LEAD must specify assigneeId
+    if (!assigneeId) {
+      return NextResponse.json({ 
+        error: "Assignee required. Select a team member to assign this task." 
+      }, { status: 400 });
+    }
+
+    // Verify assignee is valid for the creator's role
+    const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
+    if (!assignee) {
+      return NextResponse.json({ error: "Invalid assignee" }, { status: 400 });
+    }
+
+    // MANAGER can only assign to TEAM_LEADs in their organization
+    if (user.role === "MANAGER") {
+      const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
+      if (!org || assignee.role !== "TEAM_LEAD" || assignee.organizationId !== org.id) {
+        return NextResponse.json({ 
+          error: "Managers can only assign tasks to Team Leads in their organization" 
+        }, { status: 403 });
       }
     }
 
-    // For INDIVIDUAL, only allow creating tasks for their own projects and themselves
-    if (role === "INDIVIDUAL") {
-      // Check project ownership
-      const project = await prisma.project.findUnique({ where: { id: projectId } });
-      if (!project || project.ownerId !== userId) {
-        return NextResponse.json({ error: "You can only create tasks for your own projects." }, { status: 403 });
+    // TEAM_LEAD can only assign to their TEAM_MEMBERs
+    if (user.role === "TEAM_LEAD") {
+      if (assignee.role !== "TEAM_MEMBER" || assignee.teamLeadId !== user.id) {
+        return NextResponse.json({ 
+          error: "Team Leads can only assign tasks to their team members" 
+        }, { status: 403 });
       }
     }
 
@@ -111,75 +154,58 @@ export async function POST(req: Request) {
       data: {
         title,
         description,
-        projectId,
+        projectId: projectId || null,
         assigneeId,
-        creatorId: userId,
+        creatorId: user.id,
         dueDate: dueDate ? new Date(dueDate) : null,
-      },
-      include: {
-        project: true,
-        assignee: true,
       },
     });
 
-    return NextResponse.json({ task });
+    return NextResponse.json({ success: true, task });
   } catch (err: any) {
-    console.error("POST /tasks error:", err);
-    return NextResponse.json(
-      { error: "Server error", details: err.message },
-      { status: 500 }
-    );
+    console.error("❌ /api/tasks POST error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }
 
-// Edit a task
+/**
+ * PUT /api/tasks
+ * Update task status or reassign
+ */
 export async function PUT(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token);
-    if (!decoded)
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-    const { id: userId, role } = decoded as any;
-    const { id, ...update } = await req.json();
-    if (!id) return NextResponse.json({ error: "Task ID required" }, { status: 400 });
-    // Only allow edit if creator or manager
-    const task = await prisma.task.findUnique({ where: { id } });
-    if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    if (role !== "MANAGER" && task.creatorId !== userId) {
-      return NextResponse.json({ error: "Permission denied" }, { status: 403 });
-    }
-    const updated = await prisma.task.update({ where: { id }, data: update });
-    return NextResponse.json({ task: updated });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-// Delete a task
-export async function DELETE(req: Request) {
-  try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token);
-    if (!decoded)
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-    const { id: userId, role } = decoded as any;
-    const url = new URL(req.url);
-    const id = url.searchParams.get("id");
+    const { id, status, assigneeId } = await req.json();
     if (!id) return NextResponse.json({ error: "Task ID required" }, { status: 400 });
+
     const task = await prisma.task.findUnique({ where: { id } });
     if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    if (role !== "MANAGER" && task.creatorId !== userId) {
-      return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+
+    // Allow status updates for assignee, creator, or TL/Manager
+    const canUpdate = 
+      task.assigneeId === user.id || 
+      task.creatorId === user.id || 
+      user.role === "MANAGER" || 
+      user.role === "TEAM_LEAD";
+
+    if (!canUpdate) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    await prisma.task.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+
+    const updated = await prisma.task.update({
+      where: { id },
+      data: {
+        ...(status && { status }),
+        ...(assigneeId && { assigneeId }),
+      },
+    });
+
+    return NextResponse.json({ success: true, task: updated });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("❌ /api/tasks PUT error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }

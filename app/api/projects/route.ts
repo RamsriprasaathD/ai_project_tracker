@@ -1,98 +1,190 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/jwt";
+import { getUserFromToken } from "@/lib/auth";
 
+/**
+ * GET /api/projects
+ * Returns projects based on user role
+ */
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 403 });
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
 
-    const { id: userId, role } = decoded as any;
-
-    let projects;
-
-    // Role-based project fetching
-    if (role === "MANAGER") {
-      projects = await prisma.project.findMany({
-        include: { tasks: true, owner: true },
+    if (id) {
+      const project = await prisma.project.findUnique({
+        where: { id },
+        include: { tasks: true, assignedTo: true, owner: true, organization: true },
       });
-    } else if (role === "TEAM_LEAD") {
-      projects = await prisma.project.findMany({
-        where: { ownerId: userId },
-        include: { tasks: true },
-      });
-    } else if (role === "INDIVIDUAL") {
-      // INDIVIDUAL: show projects they own
-      projects = await prisma.project.findMany({
-        where: { ownerId: userId },
-        include: { tasks: true },
-      });
-    } else {
-      // TEAM_MEMBER: show projects where assigned a task
-      projects = await prisma.project.findMany({
-        where: { tasks: { some: { assigneeId: userId } } },
-        include: { tasks: true },
-      });
+      return NextResponse.json({ project });
     }
 
-    return NextResponse.json({ projects });
+    if (user.role === "MANAGER") {
+      const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
+      if (!org) return NextResponse.json({ projects: [] });
+      const projects = await prisma.project.findMany({
+        where: { organizationId: org.id },
+        include: { assignedTo: true, owner: true, tasks: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return NextResponse.json({ projects });
+    }
+
+    if (user.role === "TEAM_LEAD") {
+      const projects = await prisma.project.findMany({
+        where: {
+          OR: [
+            { assignedToId: user.id },
+            { ownerId: user.id },
+          ],
+        },
+        include: { tasks: true, assignedTo: true, owner: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return NextResponse.json({ projects });
+    }
+
+    if (user.role === "TEAM_MEMBER") {
+      const projects = await prisma.project.findMany({
+        where: {
+          tasks: { some: { assigneeId: user.id } },
+        },
+        include: { tasks: true, assignedTo: true, owner: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return NextResponse.json({ projects });
+    }
+
+    if (user.role === "INDIVIDUAL") {
+      const projects = await prisma.project.findMany({
+        where: { ownerId: user.id },
+        include: { tasks: true, owner: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return NextResponse.json({ projects });
+    }
+
+    return NextResponse.json({ projects: [] });
   } catch (err: any) {
-    console.error("GET /projects error:", err);
-    return NextResponse.json({ error: "Server error", details: err.message }, { status: 500 });
+    console.error("❌ /api/projects GET error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }
 
+/**
+ * POST /api/projects
+ * Body: { title, description?, assignedToId, deadline? }
+ * - MANAGER: Can create projects and assign to TEAM_LEADs
+ * - TEAM_LEAD: Can create projects and assign to TEAM_MEMBERs (NOT ALLOWED per requirements)
+ * - INDIVIDUAL: Can create projects for themselves
+ * - TEAM_MEMBER: CANNOT create projects
+ */
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.split(" ")[1];
-    if (!token) return NextResponse.json({ error: "Token is missing" }, { status: 401 });
+    const { title, description, assignedToId, deadline } = await req.json();
+    if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
-    const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-
-    const { id: userId, role, organizationId } = decoded as any;
-    const { title, description } = await req.json();
-
-    console.log('User role:', role); // Debug log
-
-    if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    // TEAM_MEMBER and TEAM_LEAD cannot create projects
+    if (user.role === "TEAM_MEMBER") {
+      return NextResponse.json({ 
+        error: "Team members cannot create projects. Only view assigned projects." 
+      }, { status: 403 });
     }
 
-    // Allow MANAGER, TEAM_LEAD, and INDIVIDUAL to create projects
-    if (role !== 'MANAGER' && role !== 'TEAM_LEAD' && role !== 'INDIVIDUAL') {
-      console.log('Permission denied for role:', role); // Debug log
-      return NextResponse.json({ error: "Permission denied. Only managers, team leads, and individuals can create projects." }, { status: 403 });
+    if (user.role === "TEAM_LEAD") {
+      return NextResponse.json({ 
+        error: "Team leads cannot create projects. Only managers can create projects for team leads." 
+      }, { status: 403 });
     }
 
-    // For INDIVIDUAL, do not set organizationId
-    const projectData: any = {
-      title,
-      description,
-      ownerId: userId,
-    };
-    if (role !== 'INDIVIDUAL') {
-      projectData.organizationId = organizationId || undefined;
+    let organizationId: string | undefined = undefined;
+
+    // INDIVIDUAL can only create projects for themselves
+    if (user.role === "INDIVIDUAL") {
+      const project = await prisma.project.create({
+        data: {
+          title,
+          description,
+          ownerId: user.id,
+          assignedToId: user.id,
+          organizationId: null,
+        },
+      });
+      return NextResponse.json({ success: true, project });
     }
 
-    const project = await prisma.project.create({
-      data: projectData,
-      include: {
-        tasks: true,
-        owner: true
+    // MANAGER must specify assigneeId (Team Lead)
+    if (user.role === "MANAGER") {
+      if (!assignedToId) {
+        return NextResponse.json({ 
+          error: "Assignee required. Select a Team Lead to assign this project." 
+        }, { status: 400 });
       }
-    });
 
-    return NextResponse.json({ project });
+      const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
+      organizationId = org?.id;
+
+      // Verify assignee is a Team Lead in the manager's organization
+      const assignee = await prisma.user.findUnique({ where: { id: assignedToId } });
+      if (!assignee || assignee.role !== "TEAM_LEAD" || assignee.organizationId !== org?.id) {
+        return NextResponse.json({ 
+          error: "Invalid assignee. Managers can only assign projects to Team Leads in their organization." 
+        }, { status: 403 });
+      }
+
+      const project = await prisma.project.create({
+        data: {
+          title,
+          description,
+          ownerId: user.id,
+          assignedToId,
+          organizationId,
+        },
+      });
+
+      return NextResponse.json({ success: true, project });
+    }
+
+    return NextResponse.json({ error: "Invalid role" }, { status: 403 });
   } catch (err: any) {
-    console.error("POST /projects error:", err);
-    return NextResponse.json({ error: "Server error", details: err.message }, { status: 500 });
+    console.error("❌ /api/projects POST error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/projects?id=...
+ */
+export async function DELETE(req: Request) {
+  try {
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Project ID required" }, { status: 400 });
+
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+
+    // Only the owner or manager can delete
+    if (project.ownerId !== user.id && user.role !== "MANAGER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    await prisma.project.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("❌ /api/projects DELETE error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }

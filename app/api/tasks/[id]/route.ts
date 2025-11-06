@@ -6,7 +6,7 @@ import { verifyToken } from "@/lib/jwt";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -18,7 +18,7 @@ export async function GET(
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
-    const { id } = params;
+    const { id } = await params;
 
     const task = await prisma.task.findUnique({
       where: { id },
@@ -39,7 +39,7 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -51,7 +51,7 @@ export async function PUT(
     if (!decoded)
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { title, description, status, assigneeId, dueDate } = body;
 
@@ -79,7 +79,7 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -92,7 +92,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
 
     const { id: userId, role } = decoded as any;
-    const { id } = params;
+    const { id } = await params;
 
     if (role !== "MANAGER" && role !== "TEAM_LEAD") {
       return NextResponse.json({ error: "Permission denied" }, { status: 403 });
