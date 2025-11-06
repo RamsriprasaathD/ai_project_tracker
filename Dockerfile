@@ -8,6 +8,9 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
+# Copy prisma schema (needed for production dependencies)
+COPY prisma ./prisma/
+
 # Install dependencies
 RUN npm ci --only=production && \
     npm cache clean --force
@@ -19,14 +22,12 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install all dependencies (including dev dependencies)
-RUN npm ci
-
-# Copy prisma schema
+# Copy prisma schema (BEFORE npm ci, since postinstall runs prisma generate)
 COPY prisma ./prisma/
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Install all dependencies (including dev dependencies)
+# This will automatically run prisma generate via postinstall script
+RUN npm ci
 
 # Copy application source
 COPY . .
