@@ -75,7 +75,7 @@ export default function ProjectsPage() {
   const canCreateProjects = currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL";
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar />
 
@@ -90,9 +90,9 @@ export default function ProjectsPage() {
 
           {/* Create Project Section */}
           {canCreateProjects ? (
-            <div className="bg-white border border-blue-200 rounded-2xl p-6 shadow-md mb-8">
+            <div className="bg-white dark:bg-gray-900/80 border border-blue-200 dark:border-gray-700 rounded-2xl p-6 shadow-md dark:shadow-lg/20 transition-colors duration-200 mb-8">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-blue-200 flex items-center gap-2">
                   ➕ Create New Project
                 </h2>
                 <button
@@ -102,16 +102,16 @@ export default function ProjectsPage() {
                   Create Project
                 </button>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 {currentUser?.role === "MANAGER" 
                   ? "Create projects and assign them to your Team Leads"
                   : "Create and manage your personal projects"}
               </p>
             </div>
           ) : (
-            <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-md mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Assigned Projects</h2>
-              <p className="text-gray-600 text-sm">
+            <div className="bg-white dark:bg-gray-900/80 border border-amber-200 dark:border-gray-700 rounded-2xl p-6 shadow-md dark:shadow-lg/20 transition-colors duration-200 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-amber-200 mb-2">Assigned Projects</h2>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 {currentUser?.role === "TEAM_LEAD" 
                   ? "View projects assigned to you by your Manager"
                   : "View projects and tasks assigned to you by your Team Lead"}
@@ -122,37 +122,37 @@ export default function ProjectsPage() {
           {/* Project List */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
-              <p className="text-gray-600 animate-pulse">Loading projects...</p>
+              <p className="text-gray-600 dark:text-gray-300 animate-pulse">Loading projects...</p>
             ) : projects.length === 0 ? (
-              <p className="text-gray-500">No projects found.</p>
+              <p className="text-gray-600 dark:text-gray-300">No projects found.</p>
             ) : (
               projects.map((p) => (
                 <div
                   key={p.id}
                   onClick={() => setSelectedProjectId(p.id)}
-                  className={`cursor-pointer bg-white border rounded-xl p-5 hover:shadow-lg transition-all duration-300 ${
+                  className={`cursor-pointer bg-white dark:bg-gray-900/80 border rounded-xl p-5 hover:shadow-lg transition-all duration-300 ${
                     selectedProjectId === p.id
-                      ? "ring-2 ring-blue-500 border-blue-500 shadow-md"
-                      : "border-gray-200 hover:border-blue-300"
+                      ? "ring-2 ring-blue-500 dark:ring-blue-400 border-blue-500 dark:border-blue-400 shadow-md"
+                      : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-400"
                   }`}
                 >
-                  <h3 className="text-xl font-semibold text-gray-800">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
                     {p.title}
                   </h3>
-                  <p className="text-gray-600 text-sm mt-1 mb-2">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 mb-2">
                     {p.description || "No description provided."}
                   </p>
                   <div className="space-y-1">
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">
                       Created: {new Date(p.createdAt).toLocaleDateString()}
                     </p>
                     {p.assignedTo && (
-                      <p className="text-blue-600 text-xs">
+                      <p className="text-blue-600 dark:text-blue-300 text-xs">
                         👤 Assigned to: {p.assignedTo.name || p.assignedTo.email}
                       </p>
                     )}
                     {p.owner && currentUser?.role !== "INDIVIDUAL" && (
-                      <p className="text-indigo-600 text-xs">
+                      <p className="text-indigo-600 dark:text-indigo-300 text-xs">
                         📋 Created by: {p.owner.name || p.owner.email}
                       </p>
                     )}

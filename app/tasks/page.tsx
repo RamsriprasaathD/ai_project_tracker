@@ -93,7 +93,7 @@ export default function TasksPage() {
   const canCreateTasks = currentUser?.role !== "TEAM_MEMBER";
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar />
 
@@ -102,25 +102,25 @@ export default function TasksPage() {
         <Navbar />
 
         <main className="flex-1 p-6 overflow-y-auto">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-6">
             Task Management
           </h1>
 
           {/* Create Task Section */}
           {canCreateTasks ? (
-            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
+            <div className="bg-white dark:bg-gray-900/80 border border-blue-200 dark:border-gray-700 rounded-2xl p-6 shadow-md dark:shadow-lg/20 transition-colors duration-200 mb-8">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-green-400 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-green-300 flex items-center gap-2">
                   ➕ Create New Task
                 </h2>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                  className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Create Task
                 </button>
               </div>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 {currentUser?.role === "MANAGER" 
                   ? "Create tasks and assign them to your Team Leads"
                   : currentUser?.role === "TEAM_LEAD"
@@ -129,9 +129,9 @@ export default function TasksPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
-              <h2 className="text-xl font-semibold text-yellow-400 mb-2">Assigned Tasks</h2>
-              <p className="text-gray-400 text-sm">
+            <div className="bg-white dark:bg-gray-900/80 border border-amber-200 dark:border-gray-700 rounded-2xl p-6 shadow-md dark:shadow-lg/20 transition-colors duration-200 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-yellow-300 mb-2">Assigned Tasks</h2>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 View tasks assigned to you by your Team Lead. You can create sub-tasks for better organization.
               </p>
             </div>
@@ -140,39 +140,39 @@ export default function TasksPage() {
           {/* 🧾 Task List */}
           <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
-              <p className="text-gray-400 animate-pulse">Loading tasks...</p>
+              <p className="text-gray-600 dark:text-gray-300 animate-pulse">Loading tasks...</p>
             ) : tasks.length === 0 ? (
-              <p className="text-gray-500">No tasks found.</p>
+              <p className="text-gray-600 dark:text-gray-300">No tasks found.</p>
             ) : (
               tasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`relative bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-xl p-5 shadow-md hover:shadow-[0_0_25px_rgba(59,130,246,0.3)] transition-all duration-300`}
+                  className={`relative bg-white dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300`}
                 >
-                  <h3 className="text-lg font-semibold text-blue-300 mb-1">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-blue-300 mb-1">
                     {task.title}
                   </h3>
-                  <p className="text-gray-400 text-sm mb-2">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
                     {task.description || "No description provided."}
                   </p>
                   <div className="space-y-1">
                     {task.project?.title && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         📁 Project: {task.project.title}
                       </p>
                     )}
                     {task.dueDate && (
-                      <p className="text-xs text-orange-400">
+                      <p className="text-xs text-orange-600 dark:text-orange-400">
                         📅 Due: {new Date(task.dueDate).toLocaleDateString()}
                       </p>
                     )}
                     {task.assignee && (
-                      <p className="text-xs text-cyan-400">
+                      <p className="text-xs text-cyan-600 dark:text-cyan-300">
                         👤 Assigned to: {task.assignee.name || task.assignee.email}
                       </p>
                     )}
                     {task.creator && currentUser?.role !== "INDIVIDUAL" && (
-                      <p className="text-xs text-purple-400">
+                      <p className="text-xs text-purple-600 dark:text-purple-300">
                         📋 Created by: {task.creator.name || task.creator.email}
                       </p>
                     )}
@@ -182,12 +182,12 @@ export default function TasksPage() {
                   <span
                     className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-medium ${
                       task.status === "DONE"
-                        ? "bg-green-700 text-white"
+                        ? "bg-green-500/20 dark:bg-green-700 text-green-700 dark:text-green-200"
                         : task.status === "IN_PROGRESS"
-                        ? "bg-blue-700 text-white"
+                        ? "bg-blue-500/20 dark:bg-blue-700 text-blue-700 dark:text-blue-200"
                         : task.status === "BLOCKED"
-                        ? "bg-red-700 text-white"
-                        : "bg-gray-700 text-gray-300"
+                        ? "bg-red-500/20 dark:bg-red-700 text-red-700 dark:text-red-200"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                     }`}
                   >
                     {task.status}
@@ -195,14 +195,14 @@ export default function TasksPage() {
 
                   {/* AI Risk Score */}
                   {task.aiRiskScore !== undefined && (
-                    <div className="absolute top-3 right-3 bg-gray-800 px-2 py-1 rounded-lg text-xs text-cyan-400 border border-cyan-700">
+                    <div className="absolute top-3 right-3 bg-blue-50 dark:bg-gray-800 px-2 py-1 rounded-lg text-xs text-cyan-600 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-700">
                       ⚠️ Risk: {(task.aiRiskScore * 100).toFixed(0)}%
                     </div>
                   )}
 
                   {/* Action hint for team members */}
                   {currentUser?.role === "TEAM_MEMBER" && task.assignee?.email === currentUser?.email && (
-                    <p className="mt-3 text-xs text-green-400 italic">
+                    <p className="mt-3 text-xs text-green-600 dark:text-green-300 italic">
                       💡 You can create private sub-tasks to break down this task (only you can see them)
                     </p>
                   )}
@@ -215,7 +215,7 @@ export default function TasksPage() {
 
       {/* Create Task Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="max-w-md w-full">
             <CreateTaskModal
               currentUser={currentUser}

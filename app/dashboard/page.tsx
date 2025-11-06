@@ -258,8 +258,8 @@ export default function DashboardPage() {
               </div>
 
               {/* Role-specific message */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-8">
-                <p className="text-gray-700 text-sm">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 border border-blue-200 dark:border-blue-600/40 rounded-xl p-4 mb-8 transition-colors duration-200">
+                <p className="text-gray-700 dark:text-gray-200 text-sm">
                   {currentUser?.role === "MANAGER" && "You can create projects and assign them to your Team Leads."}
                   {currentUser?.role === "TEAM_LEAD" && "You can create tasks and assign them to your Team Members."}
                   {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned tasks and create sub-tasks to organize your work."}
@@ -276,7 +276,7 @@ export default function DashboardPage() {
                   >
                     <div className="text-2xl mb-2">➕</div>
                     <div className="font-semibold text-lg">Create New Project</div>
-                    <div className="text-sm text-blue-50 mt-1">Start organizing your work</div>
+                    <div className="text-sm text-blue-50">Start organizing your work</div>
                   </button>
                 )}
                 
@@ -306,13 +306,13 @@ export default function DashboardPage() {
                         className="bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl p-4 text-left transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-gray-800 text-lg">{tl.name || tl.email}</h3>
+                          <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-lg">{tl.name || tl.email}</h3>
                           <span className="text-2xl">📊</span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                           {tl.tlIdWithinOrg ? `TL-${tl.tlIdWithinOrg}` : "Team Lead"}
-                        </p>
-                        <div className="text-xs text-indigo-600 font-medium">
+                        </div>
+                        <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
                           Click to view detailed insights
                         </div>
                       </button>
@@ -328,9 +328,9 @@ export default function DashboardPage() {
                   {/* Manager Assigned Projects */}
                   {assignedProjects.length > 0 && (
                     <div className="mb-6">
-                      <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         Projects Assigned by Manager
-                        <span className="text-sm text-gray-500 font-normal">({assignedProjects.length})</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-normal">({assignedProjects.length})</span>
                       </h2>
                       <ProjectTable 
                         projects={assignedProjects} 
@@ -357,7 +357,7 @@ export default function DashboardPage() {
 
                   {/* Recent Tasks */}
                   <div>
-                    <h2 className="text-2xl font-semibold mb-4 text-gray-800">Recent Tasks</h2>
+                    <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Recent Tasks</h2>
                     <TaskTable 
                       tasks={tasks.slice(0, 10)} 
                       currentUser={currentUser} 
@@ -368,9 +368,9 @@ export default function DashboardPage() {
               ) : currentUser?.role === "TEAM_MEMBER" ? (
                 // Team Member View: Only tasks, no project hierarchy
                 <div>
-                  <h2 className="text-2xl font-semibold mb-4 text-gray-800">My Assigned Tasks</h2>
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-gray-700">
+                  <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">My Assigned Tasks</h2>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-green-200 dark:border-green-600/40 rounded-xl p-4 mb-4 transition-colors duration-200">
+                    <p className="text-sm text-gray-700 dark:text-gray-200">
                       Focus on completing your assigned tasks. You can create private sub-tasks to organize your work.
                     </p>
                   </div>
