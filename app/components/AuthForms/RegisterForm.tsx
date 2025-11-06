@@ -92,65 +92,64 @@ export default function RegisterForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-gray-900/80 border border-gray-800 p-8 rounded-2xl shadow-[0_0_25px_rgba(59,130,246,0.15)] backdrop-blur-md max-w-md w-full mx-auto text-white"
+      className="space-y-4"
     >
-      <h2 className="text-2xl font-semibold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text text-center">
-        Create Your Account 🚀
-      </h2>
-
       {error && (
-        <p className="bg-red-900/40 text-red-400 p-2 rounded-md text-center text-sm mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
-        </p>
+        </div>
       )}
 
       {/* Name */}
-      <div className="mb-4">
-        <label className="block text-sm mb-1 text-gray-300">Full Name</label>
+      <div>
+        <label className="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
         <input
           type="text"
           name="name"
           required
           onChange={handleChange}
           value={formData.name}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800"
+          placeholder="Enter your full name"
         />
       </div>
 
       {/* Email */}
-      <div className="mb-4">
-        <label className="block text-sm mb-1 text-gray-300">Email</label>
+      <div>
+        <label className="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
         <input
           type="email"
           name="email"
           required
           onChange={handleChange}
           value={formData.email}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800"
+          placeholder="Enter your email"
         />
       </div>
 
       {/* Password */}
-      <div className="mb-4">
-        <label className="block text-sm mb-1 text-gray-300">Password</label>
+      <div>
+        <label className="block text-gray-700 text-sm font-medium mb-2">Password</label>
         <input
           type="password"
           name="password"
           required
           onChange={handleChange}
           value={formData.password}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800"
+          placeholder="Create a password"
         />
       </div>
 
       {/* Role Selection */}
-      <div className="mb-4">
-        <label className="block text-sm mb-1 text-gray-300">Select Role</label>
+      <div>
+        <label className="block text-gray-700 text-sm font-medium mb-2">Select Role</label>
         <select
           name="role"
           value={formData.role}
           onChange={handleChange}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800"
         >
           <option value="INDIVIDUAL">Individual</option>
           <option value="MANAGER">Manager</option>
@@ -163,8 +162,8 @@ export default function RegisterForm() {
       {(formData.role === "MANAGER" ||
         formData.role === "TEAM_LEAD" ||
         formData.role === "TEAM_MEMBER") && (
-        <div className="mb-4">
-          <label className="block text-sm mb-1 text-gray-300">
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
             Organization Name
           </label>
           <input
@@ -174,26 +173,26 @@ export default function RegisterForm() {
             value={formData.organizationName}
             onChange={handleChange}
             placeholder="Enter organization name"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800"
           />
         </div>
       )}
 
       {/* ✅ Team Lead Dropdown for Team Members */}
       {formData.role === "TEAM_MEMBER" && (
-        <div className="mb-4">
-          <label className="block text-sm mb-1 text-gray-300">
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-2">
             Select Team Lead (ID & Name)
           </label>
           {fetchingTLs ? (
-            <div className="text-gray-400 text-sm">Loading team leads...</div>
+            <div className="text-gray-600 text-sm p-3 bg-blue-50 rounded-lg">Loading team leads...</div>
           ) : teamLeads.length > 0 ? (
             <select
               name="tlIdWithinOrg"
               required
               value={formData.tlIdWithinOrg}
               onChange={handleChange}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800"
             >
               <option value="">Select Team Lead</option>
               {teamLeads.map((tl) => (
@@ -203,7 +202,7 @@ export default function RegisterForm() {
               ))}
             </select>
           ) : formData.organizationName.trim() !== "" ? (
-            <div className="text-red-400 text-sm">
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
               No team leads found for this organization.
             </div>
           ) : null}
@@ -214,20 +213,10 @@ export default function RegisterForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 mt-4 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition duration-200 font-semibold disabled:opacity-50"
+        className="w-full py-3 mt-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white transition-all duration-200 font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? "Registering..." : "Register"}
+        {loading ? "Creating Account..." : "Create Account"}
       </button>
-
-      <p className="text-gray-400 text-sm text-center mt-4">
-        Already have an account?{" "}
-        <span
-          onClick={() => router.push("/login")}
-          className="text-blue-400 cursor-pointer hover:underline"
-        >
-          Login here
-        </span>
-      </p>
     </form>
   );
 }

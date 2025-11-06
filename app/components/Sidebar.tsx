@@ -15,9 +15,9 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="bg-gray-950 text-gray-200 w-60 min-h-screen p-4 border-r border-gray-800">
-      <h2 className="text-xl font-bold text-blue-400 mb-6">Menu</h2>
-      <nav className="flex flex-col space-y-3">
+    <aside className="bg-white text-gray-700 w-60 min-h-screen p-4 border-r border-gray-200 shadow-sm">
+      <h2 className="text-xl font-bold text-gray-800 mb-6">Menu</h2>
+      <nav className="flex flex-col space-y-2">
         {menu.map((item) => {
           const Icon = item.icon;
           const active = path === item.path;
@@ -25,14 +25,14 @@ export default function Sidebar() {
             <button
               key={item.name}
               onClick={() => router.push(item.path)}
-              className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition ${
+              className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                 active
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-gray-800 hover:text-blue-400"
+                  ? "bg-blue-500 text-white shadow-md"
+                  : "hover:bg-gray-100 hover:text-blue-600"
               }`}
             >
               <Icon size={18} />
-              <span>{item.name}</span>
+              <span className="font-medium">{item.name}</span>
             </button>
           );
         })}

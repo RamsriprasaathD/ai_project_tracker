@@ -75,7 +75,7 @@ export default function ProjectsPage() {
   const canCreateProjects = currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL";
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       {/* Sidebar */}
       <Sidebar />
 
@@ -84,34 +84,34 @@ export default function ProjectsPage() {
         <Navbar />
 
         <main className="flex-1 p-6 overflow-y-auto">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-6">
             Projects Overview
           </h1>
 
           {/* Create Project Section */}
           {canCreateProjects ? (
-            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
+            <div className="bg-white border border-blue-200 rounded-2xl p-6 shadow-md mb-8">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   ➕ Create New Project
                 </h2>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Create Project
                 </button>
               </div>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-600 text-sm">
                 {currentUser?.role === "MANAGER" 
                   ? "Create projects and assign them to your Team Leads"
                   : "Create and manage your personal projects"}
               </p>
             </div>
           ) : (
-            <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-lg backdrop-blur-xl mb-8">
-              <h2 className="text-xl font-semibold text-yellow-400 mb-2">Assigned Projects</h2>
-              <p className="text-gray-400 text-sm">
+            <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-md mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Assigned Projects</h2>
+              <p className="text-gray-600 text-sm">
                 {currentUser?.role === "TEAM_LEAD" 
                   ? "View projects assigned to you by your Manager"
                   : "View projects and tasks assigned to you by your Team Lead"}
@@ -122,7 +122,7 @@ export default function ProjectsPage() {
           {/* Project List */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
-              <p className="text-gray-400 animate-pulse">Loading projects...</p>
+              <p className="text-gray-600 animate-pulse">Loading projects...</p>
             ) : projects.length === 0 ? (
               <p className="text-gray-500">No projects found.</p>
             ) : (
@@ -130,16 +130,16 @@ export default function ProjectsPage() {
                 <div
                   key={p.id}
                   onClick={() => setSelectedProjectId(p.id)}
-                  className={`cursor-pointer bg-gradient-to-br from-gray-900/80 to-gray-800/60 border border-gray-700 rounded-xl p-5 hover:shadow-[0_0_25px_rgba(59,130,246,0.3)] transition-all duration-300 ${
+                  className={`cursor-pointer bg-white border rounded-xl p-5 hover:shadow-lg transition-all duration-300 ${
                     selectedProjectId === p.id
-                      ? "ring-2 ring-blue-500"
-                      : "hover:ring-1 hover:ring-blue-400"
+                      ? "ring-2 ring-blue-500 border-blue-500 shadow-md"
+                      : "border-gray-200 hover:border-blue-300"
                   }`}
                 >
-                  <h3 className="text-xl font-semibold text-blue-300">
+                  <h3 className="text-xl font-semibold text-gray-800">
                     {p.title}
                   </h3>
-                  <p className="text-gray-400 text-sm mt-1 mb-2">
+                  <p className="text-gray-600 text-sm mt-1 mb-2">
                     {p.description || "No description provided."}
                   </p>
                   <div className="space-y-1">
@@ -147,12 +147,12 @@ export default function ProjectsPage() {
                       Created: {new Date(p.createdAt).toLocaleDateString()}
                     </p>
                     {p.assignedTo && (
-                      <p className="text-cyan-400 text-xs">
+                      <p className="text-blue-600 text-xs">
                         👤 Assigned to: {p.assignedTo.name || p.assignedTo.email}
                       </p>
                     )}
                     {p.owner && currentUser?.role !== "INDIVIDUAL" && (
-                      <p className="text-purple-400 text-xs">
+                      <p className="text-indigo-600 text-xs">
                         📋 Created by: {p.owner.name || p.owner.email}
                       </p>
                     )}
@@ -173,7 +173,7 @@ export default function ProjectsPage() {
 
       {/* Create Project Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="max-w-md w-full">
             <CreateProjectModal
               currentUser={currentUser}

@@ -186,7 +186,7 @@ export default function DashboardPage() {
   }, [projects, tasks]);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       {/* Sidebar */}
       <Sidebar />
 
@@ -197,18 +197,18 @@ export default function DashboardPage() {
         <main className="flex-1 p-6 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-gray-400 text-xl animate-pulse">Loading dashboard...</p>
+              <p className="text-gray-600 text-xl animate-pulse">Loading dashboard...</p>
             </div>
           ) : (
             <>
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent mb-2">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
                   Dashboard
                 </h1>
-                <p className="text-gray-400">
+                <p className="text-gray-700">
                   Welcome back, {currentUser?.name || currentUser?.email}! 
-                  <span className="ml-2 px-2 py-1 bg-blue-900/50 text-blue-300 rounded text-sm">
+                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
                     {currentUser?.role?.replace("_", " ")}
                   </span>
                 </p>
@@ -216,50 +216,50 @@ export default function DashboardPage() {
 
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700 rounded-xl p-6">
+                <div className="bg-white border border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-300 text-sm font-medium">Total Projects</p>
-                      <p className="text-3xl font-bold text-white mt-2">{stats.totalProjects}</p>
+                      <p className="text-blue-600 text-sm font-medium">Total Projects</p>
+                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalProjects}</p>
                     </div>
-                    <div className="text-blue-400 text-4xl">📁</div>
+                    <div className="text-4xl">📁</div>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700 rounded-xl p-6">
+                <div className="bg-white border border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-300 text-sm font-medium">Total Tasks</p>
-                      <p className="text-3xl font-bold text-white mt-2">{stats.totalTasks}</p>
+                      <p className="text-green-600 text-sm font-medium">Total Tasks</p>
+                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalTasks}</p>
                     </div>
-                    <div className="text-green-400 text-4xl">✓</div>
+                    <div className="text-4xl">✓</div>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700 rounded-xl p-6">
+                <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-300 text-sm font-medium">In Progress</p>
-                      <p className="text-3xl font-bold text-white mt-2">{stats.inProgressTasks}</p>
+                      <p className="text-amber-600 text-sm font-medium">In Progress</p>
+                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.inProgressTasks}</p>
                     </div>
-                    <div className="text-purple-400 text-4xl">⚡</div>
+                    <div className="text-4xl">⚡</div>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-cyan-900/50 to-cyan-800/30 border border-cyan-700 rounded-xl p-6">
+                <div className="bg-white border border-emerald-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-cyan-300 text-sm font-medium">Completed</p>
-                      <p className="text-3xl font-bold text-white mt-2">{stats.completedTasks}</p>
+                      <p className="text-emerald-600 text-sm font-medium">Completed</p>
+                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.completedTasks}</p>
                     </div>
-                    <div className="text-cyan-400 text-4xl">🎉</div>
+                    <div className="text-4xl">🎉</div>
                   </div>
                 </div>
               </div>
 
               {/* Role-specific message */}
-              <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700 rounded-xl p-4 mb-8">
-                <p className="text-gray-300 text-sm">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-8">
+                <p className="text-gray-700 text-sm">
                   {currentUser?.role === "MANAGER" && "You can create projects and assign them to your Team Leads."}
                   {currentUser?.role === "TEAM_LEAD" && "You can create tasks and assign them to your Team Members."}
                   {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned tasks and create sub-tasks to organize your work."}
@@ -272,22 +272,22 @@ export default function DashboardPage() {
                 {(currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL") && (
                   <button
                     onClick={() => router.push("/projects")}
-                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 p-4 rounded-xl text-left transition-all duration-200 shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.4)]"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 rounded-xl text-left transition-all duration-200 shadow-md hover:shadow-lg"
                   >
                     <div className="text-2xl mb-2">➕</div>
                     <div className="font-semibold text-lg">Create New Project</div>
-                    <div className="text-sm text-blue-100 mt-1">Start organizing your work</div>
+                    <div className="text-sm text-blue-50 mt-1">Start organizing your work</div>
                   </button>
                 )}
                 
                 {currentUser?.role !== "TEAM_MEMBER" && (
                   <button
                     onClick={() => router.push("/tasks")}
-                    className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 p-4 rounded-xl text-left transition-all duration-200 shadow-lg hover:shadow-[0_0_30px_rgba(34,197,94,0.4)]"
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-4 rounded-xl text-left transition-all duration-200 shadow-md hover:shadow-lg"
                   >
                     <div className="text-2xl mb-2">✓</div>
                     <div className="font-semibold text-lg">Create New Task</div>
-                    <div className="text-sm text-green-100 mt-1">Add a task to track</div>
+                    <div className="text-sm text-green-50 mt-1">Add a task to track</div>
                   </button>
                 )}
               </div>
@@ -295,7 +295,7 @@ export default function DashboardPage() {
               {/* Team Lead Insights Boxes (Manager Only) */}
               {currentUser?.role === "MANAGER" && teamLeads.length > 0 && (
                 <div className="mb-8">
-                  <h2 className="text-2xl font-semibold mb-4 text-indigo-400">
+                  <h2 className="text-2xl font-semibold mb-4 text-gray-800">
                     Team Lead Performance
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -303,16 +303,16 @@ export default function DashboardPage() {
                       <button
                         key={tl.id}
                         onClick={() => setSelectedTeamLead({ id: tl.id, name: tl.name || tl.email })}
-                        className="bg-gradient-to-br from-indigo-900/50 to-purple-900/30 border border-indigo-700 hover:border-indigo-500 rounded-xl p-4 text-left transition-all duration-200 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                        className="bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl p-4 text-left transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-white text-lg">{tl.name || tl.email}</h3>
-                          <span className="text-indigo-400 text-2xl">📊</span>
+                          <h3 className="font-semibold text-gray-800 text-lg">{tl.name || tl.email}</h3>
+                          <span className="text-2xl">📊</span>
                         </div>
-                        <p className="text-sm text-gray-400 mb-2">
+                        <p className="text-sm text-gray-600 mb-2">
                           {tl.tlIdWithinOrg ? `TL-${tl.tlIdWithinOrg}` : "Team Lead"}
                         </p>
-                        <div className="text-xs text-indigo-300">
+                        <div className="text-xs text-indigo-600 font-medium">
                           Click to view detailed insights
                         </div>
                       </button>
@@ -328,9 +328,9 @@ export default function DashboardPage() {
                   {/* Manager Assigned Projects */}
                   {assignedProjects.length > 0 && (
                     <div className="mb-6">
-                      <h2 className="text-2xl font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
                         Projects Assigned by Manager
-                        <span className="text-sm text-gray-400 font-normal">({assignedProjects.length})</span>
+                        <span className="text-sm text-gray-500 font-normal">({assignedProjects.length})</span>
                       </h2>
                       <ProjectTable 
                         projects={assignedProjects} 
@@ -343,9 +343,9 @@ export default function DashboardPage() {
                   {/* Own Projects */}
                   {ownProjects.length > 0 && (
                     <div className="mb-6">
-                      <h2 className="text-2xl font-semibold mb-4 text-purple-400 flex items-center gap-2">
+                      <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
                         My Projects
-                        <span className="text-sm text-gray-400 font-normal">({ownProjects.length})</span>
+                        <span className="text-sm text-gray-500 font-normal">({ownProjects.length})</span>
                       </h2>
                       <ProjectTable 
                         projects={ownProjects} 
@@ -357,7 +357,7 @@ export default function DashboardPage() {
 
                   {/* Recent Tasks */}
                   <div>
-                    <h2 className="text-2xl font-semibold mb-4 text-blue-400">Recent Tasks</h2>
+                    <h2 className="text-2xl font-semibold mb-4 text-gray-800">Recent Tasks</h2>
                     <TaskTable 
                       tasks={tasks.slice(0, 10)} 
                       currentUser={currentUser} 
@@ -368,9 +368,9 @@ export default function DashboardPage() {
               ) : currentUser?.role === "TEAM_MEMBER" ? (
                 // Team Member View: Only tasks, no project hierarchy
                 <div>
-                  <h2 className="text-2xl font-semibold mb-4 text-green-400">My Assigned Tasks</h2>
-                  <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-gray-300">
+                  <h2 className="text-2xl font-semibold mb-4 text-gray-800">My Assigned Tasks</h2>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-gray-700">
                       Focus on completing your assigned tasks. You can create private sub-tasks to organize your work.
                     </p>
                   </div>
