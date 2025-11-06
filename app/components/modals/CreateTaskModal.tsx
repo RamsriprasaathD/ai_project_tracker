@@ -124,8 +124,8 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-700 p-6 rounded-xl text-white">
-      <h3 className="text-xl font-semibold mb-4 text-green-400">Create Task</h3>
+    <div className="bg-gray-900 border border-gray-700 p-4 sm:p-6 rounded-xl text-white max-h-[90vh] overflow-y-auto">
+      <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-400">Create Task</h3>
       
       {error && (
         <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-2 rounded-lg mb-4">
@@ -147,13 +147,17 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
         rows={3}
       />
-      <input
-        type="date"
-        value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
-        placeholder="Due date (optional)"
-      />
+      <div className="mb-3">
+        <label className="block text-sm text-gray-400 mb-1">Due Date</label>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          min={new Date().toISOString().split('T')[0]}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+        />
+        <p className="text-xs text-gray-500 mt-1">Optional - Set a deadline for this task</p>
+      </div>
       
       {/* Project Selector - only shown when not pre-selected and user is Manager or Team Lead */}
       {!projectId && (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && (

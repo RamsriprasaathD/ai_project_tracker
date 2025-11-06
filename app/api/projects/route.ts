@@ -113,6 +113,7 @@ export async function POST(req: Request) {
         data: {
           title,
           description,
+          deadline: deadline ? new Date(deadline) : null,
           ownerId: user.id,
           assignedToId: user.id,
           organizationId: null,
@@ -144,6 +145,7 @@ export async function POST(req: Request) {
         data: {
           title,
           description,
+          deadline: deadline ? new Date(deadline) : null,
           ownerId: user.id,
           assignedToId,
           organizationId,

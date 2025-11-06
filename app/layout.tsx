@@ -5,8 +5,8 @@ import { Inter } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Project Tracker",
-  description: "Smart AI-powered OKR & Project Management Dashboard",
+  title: "HierarchIQ - Intelligent Project Management",
+  description: "Hierarchical project management with AI-powered insights for teams and organizations",
   icons: {
     icon: "/favicon.ico",
   },

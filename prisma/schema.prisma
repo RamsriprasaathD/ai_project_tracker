@@ -95,6 +95,7 @@ model Project {
   id             String        @id @default(cuid())
   title          String
   description    String?
+  deadline       DateTime?
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
