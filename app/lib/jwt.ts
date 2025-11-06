@@ -2,10 +2,13 @@
 
 import jwt, { SignOptions } from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
-
-if (!JWT_SECRET) {
-  throw new Error("❌ JWT_SECRET is not defined in environment variables!");
+// Lazy load JWT_SECRET to avoid build-time errors
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("❌ JWT_SECRET is not defined in environment variables!");
+  }
+  return secret;
 }
 
 /**
@@ -19,6 +22,7 @@ export function signToken(
   expiresIn: SignOptions["expiresIn"] = "7d"
 ): string {
   try {
+    const JWT_SECRET = getJwtSecret();
     return jwt.sign(payload, JWT_SECRET, { expiresIn });
   } catch (error) {
     console.error("Error signing JWT:", error);
@@ -33,6 +37,7 @@ export function signToken(
  */
 export function verifyToken(token: string): Record<string, any> | null {
   try {
+    const JWT_SECRET = getJwtSecret();
     return jwt.verify(token, JWT_SECRET) as Record<string, any>;
   } catch (error) {
     console.warn("⚠️ Invalid or expired JWT:", (error as Error).message);
