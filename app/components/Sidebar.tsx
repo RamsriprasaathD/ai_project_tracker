@@ -15,8 +15,8 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="bg-white text-gray-700 w-60 min-h-screen p-4 border-r border-gray-200 shadow-sm">
-      <h2 className="text-xl font-bold text-gray-800 mb-6">Menu</h2>
+    <aside className="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 w-60 min-h-screen p-4 border-r border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-200">
+      <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">Menu</h2>
       <nav className="flex flex-col space-y-2">
         {menu.map((item) => {
           const Icon = item.icon;
@@ -28,7 +28,7 @@ export default function Sidebar() {
               className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                 active
                   ? "bg-blue-500 text-white shadow-md"
-                  : "hover:bg-gray-100 hover:text-blue-600"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
               }`}
             >
               <Icon size={18} />

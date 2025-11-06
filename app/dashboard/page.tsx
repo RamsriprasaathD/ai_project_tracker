@@ -186,7 +186,7 @@ export default function DashboardPage() {
   }, [projects, tasks]);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar />
 
@@ -197,7 +197,7 @@ export default function DashboardPage() {
         <main className="flex-1 p-6 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-gray-600 text-xl animate-pulse">Loading dashboard...</p>
+              <p className="text-gray-600 dark:text-gray-400 text-xl animate-pulse">Loading dashboard...</p>
             </div>
           ) : (
             <>
@@ -206,9 +206,9 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
                   Dashboard
                 </h1>
-                <p className="text-gray-700">
+                <p className="text-gray-700 dark:text-gray-300">
                   Welcome back, {currentUser?.name || currentUser?.email}! 
-                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                  <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
                     {currentUser?.role?.replace("_", " ")}
                   </span>
                 </p>
@@ -216,41 +216,41 @@ export default function DashboardPage() {
 
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white border border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-600 text-sm font-medium">Total Projects</p>
-                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalProjects}</p>
+                      <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">Total Projects</p>
+                      <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">{stats.totalProjects}</p>
                     </div>
                     <div className="text-4xl">📁</div>
                   </div>
                 </div>
 
-                <div className="bg-white border border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="bg-white dark:bg-gray-800 border border-green-200 dark:border-green-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-600 text-sm font-medium">Total Tasks</p>
-                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalTasks}</p>
+                      <p className="text-green-600 dark:text-green-400 text-sm font-medium">Total Tasks</p>
+                      <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">{stats.totalTasks}</p>
                     </div>
                     <div className="text-4xl">✓</div>
                   </div>
                 </div>
 
-                <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-amber-600 text-sm font-medium">In Progress</p>
-                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.inProgressTasks}</p>
+                      <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">In Progress</p>
+                      <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">{stats.inProgressTasks}</p>
                     </div>
                     <div className="text-4xl">⚡</div>
                   </div>
                 </div>
 
-                <div className="bg-white border border-emerald-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-emerald-600 text-sm font-medium">Completed</p>
-                      <p className="text-3xl font-bold text-gray-800 mt-2">{stats.completedTasks}</p>
+                      <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">Completed</p>
+                      <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">{stats.completedTasks}</p>
                     </div>
                     <div className="text-4xl">🎉</div>
                   </div>
