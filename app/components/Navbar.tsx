@@ -1,14 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Safely get theme context
   const { theme, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -46,13 +53,15 @@ export default function Navbar() {
           ))}
           
           {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-all duration-200"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          {mounted && (
+            <button
+              onClick={toggleTheme}
+              className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-all duration-200"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          )}
           
           <button
             onClick={handleLogout}
@@ -110,25 +119,27 @@ export default function Navbar() {
           ))}
           
           {/* Mobile Theme Toggle */}
-          <button
-            onClick={() => {
-              toggleTheme();
-              setIsOpen(false);
-            }}
-            className="flex items-center w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200"
-          >
-            {theme === "dark" ? (
-              <>
-                <Sun size={18} className="mr-2" />
-                Light Mode
-              </>
-            ) : (
-              <>
-                <Moon size={18} className="mr-2" />
-                Dark Mode
-              </>
-            )}
-          </button>
+          {mounted && (
+            <button
+              onClick={() => {
+                toggleTheme();
+                setIsOpen(false);
+              }}
+              className="flex items-center w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun size={18} className="mr-2" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <Moon size={18} className="mr-2" />
+                  Dark Mode
+                </>
+              )}
+            </button>
+          )}
           
           <button
             onClick={() => {
