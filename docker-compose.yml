@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: hierarchiq-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hierarchiq
+      POSTGRES_PASSWORD: hierarchiq_secure_password
+      POSTGRES_DB: hierarchiq
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - hierarchiq-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hierarchiq"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hierarchiq-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://hierarchiq:hierarchiq_secure_password@postgres:5432/hierarchiq?schema=public
+      
+      # JWT
+      JWT_SECRET: your-secure-jwt-secret-min-32-characters-long-change-in-production
+      JWT_EXPIRES_IN: 7d
+      
+      # Email (Optional - configure with your SMTP)
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: your-email@gmail.com
+      SMTP_PASS: your-app-password
+      
+      # GROQ AI
+      GROQ_API_KEY: your-groq-api-key-here
+      
+      # App URL
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      
+      # Node Environment
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hierarchiq-network
+    volumes:
+      - ./prisma:/app/prisma
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        npx prisma migrate deploy &&
+        echo 'Database migrations completed!' &&
+        node server.js
+      "
+
+  # Adminer - Database Management UI (Optional)
+  adminer:
+    image: adminer:latest
+    container_name: hierarchiq-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - hierarchiq-network
+
+networks:
+  hierarchiq-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

@@ -1,0 +1,19 @@
+# HierarchIQ - Development Dockerfile
+# Optimized for hot reload and development
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies for Prisma
+RUN apk add --no-cache libc6-compat openssl
+
+# Set development environment
+ENV NODE_ENV=development
+
+# Expose port
+EXPOSE 3000
+
+# The actual npm install and dev server start will happen via docker-compose command
+# This allows for hot reload when source files change
+CMD ["npm", "run", "dev"]
