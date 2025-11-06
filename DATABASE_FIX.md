@@ -4,7 +4,7 @@
 
 Your login is failing because the **database cannot be reached**:
 ```
-Can't reach database server at aws-1-ap-southeast-1.pooler.supabase.com:5432
+
 ```
 
 This is NOT a code issue - it's a database connectivity issue.
@@ -35,13 +35,7 @@ Your current connection string might be outdated:
 4. Copy the **Connection String** (Pooler or Direct)
 5. Replace in `.env`:
 
-```bash
-# Use Pooler (recommended for serverless)
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@[YOUR-PROJECT].pooler.supabase.com:5432/postgres?sslmode=require"
 
-# OR use Direct Connection
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres?sslmode=require"
-```
 
 ### Solution 3: Check Your IP Whitelist
 
@@ -70,7 +64,7 @@ For development, use local PostgreSQL:
 2. Create database: `createdb projecttracker`
 3. Update `.env`:
 ```bash
-DATABASE_URL="postgresql://postgres:password@localhost:5432/projecttracker"
+
 ```
 4. Run migrations:
 ```bash
@@ -80,11 +74,6 @@ npx prisma migrate dev
 ---
 
 ## 🔍 Current Connection String Check
-
-Your `.env` has:
-```
-DATABASE_URL="postgresql://postgres.ezxmbqhufxexileljjfu:Ramsriprasaath@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require"
-```
 
 **Possible Issues**:
 - ❌ Database is paused/sleeping
