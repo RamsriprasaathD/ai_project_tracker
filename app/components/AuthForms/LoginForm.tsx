@@ -30,21 +30,6 @@ export default function LoginForm() {
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userId", data.userId);
       
-      // Set up authorization headers for all future requests
-      const token = data.token;
-      if (token) {
-        const originalFetch = window.fetch;
-        window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
-          const headers = new Headers(init?.headers || {});
-          headers.set("Authorization", `Bearer ${token}`);
-          
-          return originalFetch(input, {
-            ...init,
-            headers
-          });
-        };
-      }
-      
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
