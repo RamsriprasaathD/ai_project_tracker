@@ -14,11 +14,16 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const projectId = url.searchParams.get("projectId");
+    const summary = url.searchParams.get("summary") === "true";
+
+    const includeOptions = summary ? 
+      { assignee: true, creator: true, project: { select: { id: true, title: true } } } :
+      { assignee: true, creator: true, project: true, subtasks: true };
 
     if (id) {
       const task = await prisma.task.findUnique({
         where: { id },
-        include: { assignee: true, creator: true, project: true, subtasks: true },
+        include: includeOptions,
       });
       
       // Hide subtasks from everyone except the assigned team member
@@ -41,7 +46,7 @@ export async function GET(req: Request) {
             parentTaskId: null,
             project: { organizationId: org.id },
           },
-          include: { assignee: true, creator: true, project: true },
+          include: includeOptions,
           orderBy: { createdAt: "desc" },
         });
       }
@@ -56,19 +61,19 @@ export async function GET(req: Request) {
           ],
           AND: projectId ? [{ projectId }] : undefined,
         },
-        include: { assignee: true, creator: true, project: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
     } else if (user.role === "TEAM_MEMBER") {
       tasks = await prisma.task.findMany({
         where: { assigneeId: user.id },
-        include: { assignee: true, creator: true, project: true, subtasks: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
     } else if (user.role === "INDIVIDUAL") {
       tasks = await prisma.task.findMany({
         where: { OR: [{ assigneeId: user.id }, { creatorId: user.id }] },
-        include: { assignee: true, creator: true, project: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
     }

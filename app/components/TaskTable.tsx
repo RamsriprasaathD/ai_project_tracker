@@ -38,9 +38,9 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
 
   if (tasks.length === 0) {
     return (
-      <div className="bg-gray-900/80 border border-gray-800 p-4 rounded-xl">
+      <div className="bg-white border border-gray-200 p-4 rounded-xl">
         <h2 className="text-xl font-semibold mb-4 text-green-400">Tasks</h2>
-        <p className="text-gray-400 text-center py-8">
+        <p className="text-gray-600 text-center py-8">
           {currentUser?.role === "TEAM_MEMBER" 
             ? "No tasks assigned to you yet."
             : "No tasks found. Create your first task!"}
@@ -50,7 +50,7 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
   }
 
   return (
-    <div className="bg-gray-900/80 border border-gray-800 p-4 rounded-xl">
+    <div className="bg-white border border-gray-200 p-4 rounded-xl">
       <h2 className="text-xl font-semibold mb-4 text-green-400">Tasks</h2>
       <div className="space-y-3">
         {tasks.map((t) => {
@@ -60,11 +60,11 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
           const isExpanded = expandedTasks.has(t.id);
 
           return (
-            <div key={t.id} className="bg-gray-800 p-4 rounded-lg border border-gray-700 hover:border-green-500 transition">
+            <div key={t.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-green-500 transition">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="font-semibold text-white text-lg mb-1">{t.title}</div>
-                  <div className="text-sm text-gray-400 mb-2">{t.description || "No description"}</div>
+                  <div className="font-semibold text-gray-900 text-lg mb-1">{t.title}</div>
+                  <div className="text-sm text-gray-600 mb-2">{t.description || "No description"}</div>
                   
                   <div className="space-y-1">
                     {/* Hide project details from Team Members to maintain hierarchy privacy */}
@@ -72,18 +72,18 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
                       <div className="text-xs text-gray-500">📁 Project: {t.project.title}</div>
                     )}
                     {t.dueDate && (
-                      <div className="text-xs text-orange-400">
+                      <div className="text-xs text-orange-600">
                         📅 Due: {new Date(t.dueDate).toLocaleDateString()}
                       </div>
                     )}
                     {t.assignee && (
-                      <div className="text-xs text-cyan-400">
+                      <div className="text-xs text-cyan-600">
                         👤 Assigned to: {t.assignee.name || t.assignee.email}
                       </div>
                     )}
                     {/* Hide creator info from Team Members and Individuals to maintain hierarchy privacy */}
                     {t.creator && currentUser?.role !== "INDIVIDUAL" && currentUser?.role !== "TEAM_MEMBER" && (
-                      <div className="text-xs text-purple-400">
+                      <div className="text-xs text-purple-600">
                         📋 Created by: {t.creator.name || t.creator.email}
                       </div>
                     )}
@@ -96,7 +96,7 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
                     <select
                       value={t.status}
                       onChange={(e) => updateStatus(t.id, e.target.value)}
-                      className="bg-gray-700 text-white rounded-md px-3 py-1 text-sm border border-gray-600 hover:border-green-400 transition"
+                      className="bg-white text-gray-900 rounded-md px-3 py-1 text-sm border border-gray-300 hover:border-green-400 transition"
                     >
                       <option value="TODO">To Do</option>
                       <option value="IN_PROGRESS">In Progress</option>
@@ -106,10 +106,10 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
                   )}
                   {!canUpdateStatus && (
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      t.status === "DONE" ? "bg-green-700 text-white" :
-                      t.status === "IN_PROGRESS" ? "bg-blue-700 text-white" :
-                      t.status === "BLOCKED" ? "bg-red-700 text-white" :
-                      "bg-gray-700 text-gray-300"
+                      t.status === "DONE" ? "bg-green-100 text-green-700" :
+                      t.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                      t.status === "BLOCKED" ? "bg-red-100 text-red-700" :
+                      "bg-gray-100 text-gray-700"
                     }`}>
                       {t.status}
                     </span>
@@ -119,11 +119,11 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
 
               {/* Sub-tasks section - ONLY visible to assigned team member */}
               {canManageSubtasks && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between mb-2">
                     <button
                       onClick={() => toggleTaskExpansion(t.id)}
-                      className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                      className="text-sm text-blue-600 hover:text-blue-500 flex items-center gap-1"
                     >
                       {isExpanded ? "▼" : "▶"} My Sub-tasks {t.subtasks?.length > 0 ? `(${t.subtasks.length})` : ""}
                     </button>

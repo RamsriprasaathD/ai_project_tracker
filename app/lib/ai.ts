@@ -31,7 +31,9 @@ ${data.tasks && data.tasks.length
         : "No tasks available"}
     `;
 
-    // 🔹 2. Call GROQ API (Llama 3.1)
+    // 🔹 2. Call GROQ API (using latest recommended Llama model)
+    const modelId = process.env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile";
+
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -39,7 +41,7 @@ ${data.tasks && data.tasks.length
         Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "llama-3.1-70b-versatile",
+        model: modelId,
         messages: [
           {
             role: "system",

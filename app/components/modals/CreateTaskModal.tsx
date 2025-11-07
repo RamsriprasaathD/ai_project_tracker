@@ -113,13 +113,13 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
 
   if (!canCreateTasks) {
     return (
-      <div className="bg-gray-900 border border-gray-700 p-6 rounded-xl text-white">
+      <div className="bg-white border border-gray-200 p-6 rounded-xl text-gray-900">
         <h3 className="text-xl font-semibold mb-4 text-red-400">Access Denied</h3>
-        <p className="text-gray-400">
+        <p className="text-gray-700">
           Team Members cannot create tasks. You can only create sub-tasks for tasks assigned to you.
         </p>
         {onClose && (
-          <button onClick={onClose} className="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">
+          <button onClick={onClose} className="mt-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg">
             Close
           </button>
         )}
@@ -128,23 +128,23 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-700 p-4 sm:p-6 rounded-xl text-white max-h-[90vh] overflow-y-auto">
+    <div className="bg-white border border-gray-200 p-4 sm:p-6 rounded-xl text-gray-900 max-h-[90vh] overflow-y-auto">
       <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-400">Create Task</h3>
       
       {error && (
-        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-2 rounded-lg mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg mb-4">
           {error}
         </div>
       )}
 
       {currentUser?.role === "TEAM_MEMBER" && (
-        <div className="mb-4 text-sm text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-lg px-3 py-2">
+        <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           Personal task mode is enabled. These tasks remain private to you and do not appear in your team lead's dashboard.
         </div>
       )}
 
       {currentUser?.role === "TEAM_LEAD" && (
-        <label className="flex items-center gap-2 text-sm text-gray-300 mb-4">
+        <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
           <input
             type="checkbox"
             checked={isPersonal}
@@ -166,23 +166,23 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         placeholder="Task title *"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
+        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 mb-3 text-gray-900"
       />
       <textarea
         placeholder="Task description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
+        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 mb-3 text-gray-900"
         rows={3}
       />
       <div className="mb-3">
-        <label className="block text-sm text-gray-400 mb-1">Due Date</label>
+        <label className="block text-sm text-gray-600 mb-1">Due Date</label>
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           min={new Date().toISOString().split('T')[0]}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+          className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900"
         />
         <p className="text-xs text-gray-500 mt-1">Optional - Set a deadline for this task</p>
       </div>
@@ -190,11 +190,11 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       {/* Project Selector - only shown when not pre-selected and user is Manager or Team Lead */}
       {!projectId && !isPersonal && (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && (
         <>
-          <label className="block text-sm text-gray-400 mb-1">Project *</label>
+          <label className="block text-sm text-gray-600 mb-1">Project *</label>
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
+            className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 mb-3 text-gray-900"
           >
             <option value="">Select Project</option>
             {projects.map((p) => (
@@ -208,18 +208,18 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
 
       {/* Show selected project when pre-selected */}
       {projectId && !isPersonal && (
-        <div className="mb-3 p-2 bg-indigo-900/30 border border-indigo-700 rounded-lg text-sm text-gray-300">
+        <div className="mb-3 p-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-gray-700">
           Task will be added to the selected project
         </div>
       )}
       
       {currentUser?.role === "MANAGER" && !isPersonal && (
         <>
-          <label className="block text-sm text-gray-400 mb-1">Assign to Team Lead *</label>
+          <label className="block text-sm text-gray-600 mb-1">Assign to Team Lead *</label>
           <select
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
+            className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 mb-3 text-gray-900"
           >
             <option value="">Select Team Lead</option>
             {assignableUsers.map((u) => (
@@ -233,11 +233,11 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
 
       {currentUser?.role === "TEAM_LEAD" && !isPersonal && (
         <>
-          <label className="block text-sm text-gray-400 mb-1">Assign to Team Member *</label>
+          <label className="block text-sm text-gray-600 mb-1">Assign to Team Member *</label>
           <select
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
+            className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 mb-3 text-gray-900"
           >
             <option value="">Select Team Member</option>
             {assignableUsers.map((u) => (
@@ -250,7 +250,7 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       )}
 
       {(currentUser?.role === "INDIVIDUAL" || isPersonal) && (
-        <p className="text-sm text-gray-400 mb-3 italic">
+        <p className="text-sm text-gray-600 mb-3 italic">
           This task will be assigned to you.
         </p>
       )}
@@ -259,14 +259,14 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         <button
           onClick={handleCreate}
           disabled={loading}
-          className="flex-1 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition"
+          className="flex-1 bg-green-600 hover:bg-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition"
         >
           {loading ? "Creating..." : "Create Task"}
         </button>
         {onClose && (
           <button
             onClick={onClose}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition"
+            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded-lg transition"
           >
             Cancel
           </button>

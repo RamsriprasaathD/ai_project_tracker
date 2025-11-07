@@ -2,16 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useTheme } from "../contexts/ThemeContext";
-import { Moon, Sun } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  // Safely get theme context
-  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -30,7 +25,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="w-full bg-white dark:bg-gray-900 text-gray-800 dark:text-white px-4 sm:px-6 py-3 sm:py-4 shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors duration-200">
+    <nav className="w-full bg-amber-50 text-amber-900 px-4 sm:px-6 py-3 sm:py-4 shadow-md border-b border-amber-200 sticky top-0 z-50 transition-colors duration-200">
       <div className="flex justify-between items-center">
         {/* Logo */}
         <div 
@@ -46,22 +41,11 @@ export default function Navbar() {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium"
+              className="text-amber-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium"
             >
               {item.label}
             </button>
           ))}
-          
-          {/* Theme Toggle */}
-          {mounted && (
-            <button
-              onClick={toggleTheme}
-              className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-all duration-200"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-          )}
           
           <button
             onClick={handleLogout}
@@ -74,7 +58,7 @@ export default function Navbar() {
         {/* Mobile Hamburger */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+          className="md:hidden p-2 rounded-lg hover:bg-amber-100 transition-colors text-amber-700"
           aria-label="Toggle menu"
         >
           <svg
@@ -104,7 +88,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden mt-4 pb-2 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="md:hidden mt-4 pb-2 space-y-2 border-t border-amber-200 pt-4">
           {navItems.map((item) => (
             <button
               key={item.path}
@@ -112,34 +96,11 @@ export default function Navbar() {
                 router.push(item.path);
                 setIsOpen(false);
               }}
-              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200"
+              className="block w-full text-left px-4 py-2 text-amber-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200"
             >
               {item.label}
             </button>
           ))}
-          
-          {/* Mobile Theme Toggle */}
-          {mounted && (
-            <button
-              onClick={() => {
-                toggleTheme();
-                setIsOpen(false);
-              }}
-              className="flex items-center w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200"
-            >
-              {theme === "dark" ? (
-                <>
-                  <Sun size={18} className="mr-2" />
-                  Light Mode
-                </>
-              ) : (
-                <>
-                  <Moon size={18} className="mr-2" />
-                  Dark Mode
-                </>
-              )}
-            </button>
-          )}
           
           <button
             onClick={() => {

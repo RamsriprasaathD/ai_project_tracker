@@ -55,7 +55,7 @@ export default function DashboardInsights({ currentUser }: Props) {
       if (line.includes('**')) {
         const headerText = line.replace(/\*\*/g, '');
         return (
-          <h3 key={index} className="text-lg font-semibold mt-4 mb-2 text-white">
+          <h3 key={index} className="text-lg font-semibold mt-4 mb-2 text-gray-800">
             {headerText}
           </h3>
         );
@@ -64,14 +64,14 @@ export default function DashboardInsights({ currentUser }: Props) {
       // Check if line is a bullet point
       if (line.startsWith('•')) {
         return (
-          <li key={index} className="text-gray-300 mb-1 ml-4">
+          <li key={index} className="text-gray-600 mb-1 ml-4">
             {line.substring(1).trim()}
           </li>
         );
       }
       
       return (
-        <p key={index} className="text-gray-300 mb-2">
+        <p key={index} className="text-gray-600 mb-2">
           {line}
         </p>
       );
@@ -79,15 +79,15 @@ export default function DashboardInsights({ currentUser }: Props) {
   };
 
   return (
-    <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border border-purple-700/50 rounded-xl p-6 shadow-lg">
+    <div className="bg-gradient-to-br from-gray-100 to-blue-100 border border-gray-200 rounded-xl p-6 shadow-md">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-purple-300 flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
           AI Insights
         </h2>
         <button
           onClick={fetchInsights}
           disabled={loading}
-          className="text-sm px-3 py-1 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition"
+          className="text-sm px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-lg transition"
         >
           {loading ? "Generating..." : "Refresh"}
         </button>
@@ -95,18 +95,18 @@ export default function DashboardInsights({ currentUser }: Props) {
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-pulse text-purple-300">
+          <div className="animate-pulse text-blue-500">
             <p className="text-center">Analyzing your dashboard...</p>
             <p className="text-sm text-gray-400 text-center mt-2">This may take a few seconds</p>
           </div>
         </div>
       ) : error ? (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-200">
+        <div className="bg-red-100 border border-red-400 rounded-lg p-4 text-red-800">
           <p className="font-semibold">Error</p>
           <p className="text-sm mt-1">{error}</p>
           <button
             onClick={fetchInsights}
-            className="mt-3 text-sm px-3 py-1 bg-red-600 hover:bg-red-500 rounded transition"
+            className="mt-3 text-sm px-3 py-1 bg-red-500 text-white hover:bg-red-600 rounded transition"
           >
             Try Again
           </button>
@@ -121,7 +121,7 @@ export default function DashboardInsights({ currentUser }: Props) {
         </p>
       )}
 
-      <div className="mt-4 pt-4 border-t border-purple-700/30 text-xs text-gray-400">
+      <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
         <p>Note: AI insights are generated based on your current dashboard data and role-specific responsibilities.</p>
       </div>
     </div>

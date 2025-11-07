@@ -120,11 +120,11 @@ export default function SubTaskTable({ parentTaskId, currentUser, onRefresh }: S
   }
 
   return (
-    <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4">
-      <h3 className="text-lg font-semibold text-purple-400 mb-2">Sub-tasks</h3>
+    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+      <h3 className="text-lg font-semibold text-purple-600 mb-2">Sub-tasks</h3>
       
       {error && (
-        <div className="bg-red-900/50 border border-red-700 text-red-200 px-3 py-2 rounded-lg mb-3 text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-3 text-sm">
           {error}
         </div>
       )}
@@ -136,12 +136,12 @@ export default function SubTaskTable({ parentTaskId, currentUser, onRefresh }: S
           onChange={(e) => setNewSubtask(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && addSubtask()}
           placeholder="New sub-task title..."
-          className="flex-1 bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="flex-1 bg-white border border-gray-300 px-3 py-2 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
         <button
           onClick={addSubtask}
           disabled={loading}
-          className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition"
+          className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition"
         >
           {loading ? "Adding..." : "Add"}
         </button>
@@ -152,14 +152,14 @@ export default function SubTaskTable({ parentTaskId, currentUser, onRefresh }: S
           {subtasks.map((s) => (
             <li
               key={s.id}
-              className="flex justify-between items-center gap-2 bg-gray-800 px-3 py-2 rounded-lg hover:bg-gray-750 transition"
+              className="flex justify-between items-center gap-2 bg-white px-3 py-2 rounded-lg hover:bg-gray-50 transition"
             >
-              <span className="flex-1 text-sm text-gray-200">{s.title}</span>
+              <span className="flex-1 text-sm text-gray-900">{s.title}</span>
               <div className="flex gap-2 items-center">
                 <select
                   value={s.status}
                   onChange={(e) => updateStatus(s.id, e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded-md text-xs text-white px-2 py-1 hover:border-purple-400 transition"
+                  className="bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-900 px-2 py-1 hover:border-purple-400 transition"
                 >
                   <option value="TODO">To Do</option>
                   <option value="IN_PROGRESS">In Progress</option>
@@ -168,7 +168,7 @@ export default function SubTaskTable({ parentTaskId, currentUser, onRefresh }: S
                 </select>
                 <button
                   onClick={() => deleteSubtask(s.id)}
-                  className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded border border-red-400/30 hover:bg-red-400/10 transition"
+                  className="text-red-500 hover:text-red-400 text-xs px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition"
                   title="Delete subtask"
                 >
                   Delete

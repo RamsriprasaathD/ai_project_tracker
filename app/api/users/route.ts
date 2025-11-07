@@ -6,6 +6,8 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const teamLeadId = url.searchParams.get("teamLeadId");
+    const full = url.searchParams.get("full") === "true";
+
     if (teamLeadId) {
       // Fetch all team members for this TL
       const teamMembers = await prisma.user.findMany({
@@ -30,10 +32,8 @@ export async function GET(req: Request) {
       where: { id: userId },
       include: {
         organization: true,
-        projectsOwned: true,
-        tasksAssigned: {
-          include: { project: true },
-        },
+        projectsOwned: full,
+        tasksAssigned: full ? { include: { project: true } } : false,
       },
     });
 

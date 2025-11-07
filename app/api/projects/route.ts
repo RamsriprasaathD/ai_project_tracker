@@ -14,11 +14,16 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
+    const summary = url.searchParams.get("summary") === "true";
+
+    const includeOptions = summary ? 
+      { assignedTo: true, owner: true, _count: { select: { tasks: true } } } :
+      { tasks: true, assignedTo: true, owner: true, organization: true };
 
     if (id) {
       const project = await prisma.project.findUnique({
         where: { id },
-        include: { tasks: true, assignedTo: true, owner: true, organization: true },
+        include: includeOptions,
       });
       return NextResponse.json({ project });
     }
@@ -28,7 +33,7 @@ export async function GET(req: Request) {
       if (!org) return NextResponse.json({ projects: [] });
       const projects = await prisma.project.findMany({
         where: { organizationId: org.id },
-        include: { assignedTo: true, owner: true, tasks: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ projects });
@@ -42,7 +47,7 @@ export async function GET(req: Request) {
             { ownerId: user.id },
           ],
         },
-        include: { tasks: true, assignedTo: true, owner: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ projects });
@@ -53,7 +58,7 @@ export async function GET(req: Request) {
         where: {
           tasks: { some: { assigneeId: user.id } },
         },
-        include: { tasks: true, assignedTo: true, owner: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ projects });
@@ -62,7 +67,7 @@ export async function GET(req: Request) {
     if (user.role === "INDIVIDUAL") {
       const projects = await prisma.project.findMany({
         where: { ownerId: user.id },
-        include: { tasks: true, owner: true },
+        include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ projects });

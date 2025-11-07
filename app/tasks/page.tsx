@@ -93,7 +93,7 @@ export default function TasksPage() {
   const canCreateTasks = currentUser?.role !== "TEAM_MEMBER";
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-200">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar />
 
@@ -108,9 +108,9 @@ export default function TasksPage() {
 
           {/* Create Task Section */}
           {canCreateTasks ? (
-            <div className="bg-white dark:bg-gray-900/80 border border-blue-200 dark:border-gray-700 rounded-2xl p-6 shadow-md dark:shadow-lg/20 transition-colors duration-200 mb-8">
+            <div className="bg-white border border-blue-200 rounded-2xl p-6 shadow-md transition-colors duration-200 mb-8">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-green-300 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   ➕ Create New Task
                 </h2>
                 <button
@@ -120,7 +120,7 @@ export default function TasksPage() {
                   Create Task
                 </button>
               </div>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
+              <p className="text-gray-600 text-sm">
                 {currentUser?.role === "MANAGER" 
                   ? "Create tasks and assign them to your Team Leads"
                   : currentUser?.role === "TEAM_LEAD"
@@ -129,9 +129,9 @@ export default function TasksPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-900/80 border border-amber-200 dark:border-gray-700 rounded-2xl p-6 shadow-md dark:shadow-lg/20 transition-colors duration-200 mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-yellow-300 mb-2">Assigned Tasks</h2>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
+            <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-md transition-colors duration-200 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Assigned Tasks</h2>
+              <p className="text-gray-600 text-sm">
                 View tasks assigned to you by your Team Lead. You can create sub-tasks for better organization.
               </p>
             </div>
@@ -140,39 +140,39 @@ export default function TasksPage() {
           {/* 🧾 Task List */}
           <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
-              <p className="text-gray-600 dark:text-gray-300 animate-pulse">Loading tasks...</p>
+              <p className="text-gray-600 animate-pulse">Loading tasks...</p>
             ) : tasks.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-300">No tasks found.</p>
+              <p className="text-gray-600">No tasks found.</p>
             ) : (
               tasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`relative bg-white dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300`}
+                  className={`relative bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300`}
                 >
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-blue-300 mb-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
                     {task.title}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
+                  <p className="text-gray-600 text-sm mb-2">
                     {task.description || "No description provided."}
                   </p>
                   <div className="space-y-1">
                     {task.project?.title && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500">
                         📁 Project: {task.project.title}
                       </p>
                     )}
                     {task.dueDate && (
-                      <p className="text-xs text-orange-600 dark:text-orange-400">
+                      <p className="text-xs text-orange-600">
                         📅 Due: {new Date(task.dueDate).toLocaleDateString()}
                       </p>
                     )}
                     {task.assignee && (
-                      <p className="text-xs text-cyan-600 dark:text-cyan-300">
+                      <p className="text-xs text-cyan-600">
                         👤 Assigned to: {task.assignee.name || task.assignee.email}
                       </p>
                     )}
                     {task.creator && currentUser?.role !== "INDIVIDUAL" && (
-                      <p className="text-xs text-purple-600 dark:text-purple-300">
+                      <p className="text-xs text-purple-600">
                         📋 Created by: {task.creator.name || task.creator.email}
                       </p>
                     )}
@@ -182,12 +182,12 @@ export default function TasksPage() {
                   <span
                     className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-medium ${
                       task.status === "DONE"
-                        ? "bg-green-500/20 dark:bg-green-700 text-green-700 dark:text-green-200"
+                        ? "bg-green-100 text-green-700"
                         : task.status === "IN_PROGRESS"
-                        ? "bg-blue-500/20 dark:bg-blue-700 text-blue-700 dark:text-blue-200"
+                        ? "bg-blue-100 text-blue-700"
                         : task.status === "BLOCKED"
-                        ? "bg-red-500/20 dark:bg-red-700 text-red-700 dark:text-red-200"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-700"
                     }`}
                   >
                     {task.status}
@@ -195,14 +195,14 @@ export default function TasksPage() {
 
                   {/* AI Risk Score */}
                   {task.aiRiskScore !== undefined && (
-                    <div className="absolute top-3 right-3 bg-blue-50 dark:bg-gray-800 px-2 py-1 rounded-lg text-xs text-cyan-600 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-700">
+                    <div className="absolute top-3 right-3 bg-blue-50 px-2 py-1 rounded-lg text-xs text-cyan-600 border border-cyan-200">
                       ⚠️ Risk: {(task.aiRiskScore * 100).toFixed(0)}%
                     </div>
                   )}
 
                   {/* Action hint for team members */}
                   {currentUser?.role === "TEAM_MEMBER" && task.assignee?.email === currentUser?.email && (
-                    <p className="mt-3 text-xs text-green-600 dark:text-green-300 italic">
+                    <p className="mt-3 text-xs text-green-600 italic">
                       💡 You can create private sub-tasks to break down this task (only you can see them)
                     </p>
                   )}
