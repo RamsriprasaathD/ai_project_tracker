@@ -11,12 +11,14 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
   const [assignableUsers, setAssignableUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isPersonal, setIsPersonal] = useState(() => currentUser?.role === "TEAM_MEMBER");
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
+    if (currentUser?.role === "TEAM_MEMBER") return;
     fetchAssignableUsers();
     fetchProjects();
-  }, []);
+  }, [currentUser?.role]);
 
   async function fetchAssignableUsers() {
     try {
@@ -55,12 +57,12 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       return;
     }
 
-    if ((currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && !assignee) {
+    if (!isPersonal && (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && !assignee) {
       setError("Please select an assignee for this task");
       return;
     }
 
-    if ((currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && !selectedProject) {
+    if (!isPersonal && (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && !selectedProject) {
       setError("Please select a project for this task");
       return;
     }
@@ -77,8 +79,9 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
           title,
           description,
           dueDate,
-          assigneeId: currentUser?.role === "INDIVIDUAL" ? undefined : assignee,
-          projectId: selectedProject || null,
+          assigneeId: isPersonal ? undefined : currentUser?.role === "INDIVIDUAL" ? undefined : assignee,
+          projectId: isPersonal ? null : selectedProject || null,
+          isPersonal,
         }),
       });
 
@@ -95,6 +98,7 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       setDueDate("");
       setAssignee("");
       setSelectedProject(projectId || "");
+      setIsPersonal(currentUser?.role === "TEAM_MEMBER" ? true : false);
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     } catch (err: any) {
@@ -133,6 +137,30 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         </div>
       )}
 
+      {currentUser?.role === "TEAM_MEMBER" && (
+        <div className="mb-4 text-sm text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-lg px-3 py-2">
+          Personal task mode is enabled. These tasks remain private to you and do not appear in your team lead's dashboard.
+        </div>
+      )}
+
+      {currentUser?.role === "TEAM_LEAD" && (
+        <label className="flex items-center gap-2 text-sm text-gray-300 mb-4">
+          <input
+            type="checkbox"
+            checked={isPersonal}
+            onChange={(e) => {
+              setIsPersonal(e.target.checked);
+              if (e.target.checked) {
+                setAssignee("");
+                setSelectedProject("");
+              }
+            }}
+            className="accent-green-500"
+          />
+          Create as a personal task (kept separate from organizational projects)
+        </label>
+      )}
+
       <input
         type="text"
         placeholder="Task title *"
@@ -160,7 +188,7 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       </div>
       
       {/* Project Selector - only shown when not pre-selected and user is Manager or Team Lead */}
-      {!projectId && (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && (
+      {!projectId && !isPersonal && (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && (
         <>
           <label className="block text-sm text-gray-400 mb-1">Project *</label>
           <select
@@ -179,13 +207,13 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       )}
 
       {/* Show selected project when pre-selected */}
-      {projectId && (
+      {projectId && !isPersonal && (
         <div className="mb-3 p-2 bg-indigo-900/30 border border-indigo-700 rounded-lg text-sm text-gray-300">
           Task will be added to the selected project
         </div>
       )}
       
-      {currentUser?.role === "MANAGER" && (
+      {currentUser?.role === "MANAGER" && !isPersonal && (
         <>
           <label className="block text-sm text-gray-400 mb-1">Assign to Team Lead *</label>
           <select
@@ -203,7 +231,7 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         </>
       )}
 
-      {currentUser?.role === "TEAM_LEAD" && (
+      {currentUser?.role === "TEAM_LEAD" && !isPersonal && (
         <>
           <label className="block text-sm text-gray-400 mb-1">Assign to Team Member *</label>
           <select
@@ -221,7 +249,7 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         </>
       )}
 
-      {currentUser?.role === "INDIVIDUAL" && (
+      {(currentUser?.role === "INDIVIDUAL" || isPersonal) && (
         <p className="text-sm text-gray-400 mb-3 italic">
           This task will be assigned to you.
         </p>

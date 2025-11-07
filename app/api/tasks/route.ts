@@ -37,7 +37,10 @@ export async function GET(req: Request) {
       const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
       if (org) {
         tasks = await prisma.task.findMany({
-          where: { project: { organizationId: org.id } },
+          where: {
+            parentTaskId: null,
+            project: { organizationId: org.id },
+          },
           include: { assignee: true, creator: true, project: true },
           orderBy: { createdAt: "desc" },
         });
@@ -45,6 +48,7 @@ export async function GET(req: Request) {
     } else if (user.role === "TEAM_LEAD") {
       tasks = await prisma.task.findMany({
         where: {
+          parentTaskId: null,
           OR: [
             { assigneeId: user.id },
             { creatorId: user.id },
@@ -93,71 +97,99 @@ export async function POST(req: Request) {
     const user = token ? await getUserFromToken(token) : null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { title, description, projectId, assigneeId, dueDate } = await req.json();
+    const { title, description, projectId, assigneeId, dueDate, isPersonal } = await req.json();
     if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
-    // TEAM_MEMBER cannot create tasks
+    const baseData = {
+      title,
+      description,
+      dueDate: dueDate ? new Date(dueDate) : null,
+    };
+
+    // TEAM_MEMBER personal task support
     if (user.role === "TEAM_MEMBER") {
-      return NextResponse.json({ 
-        error: "Team members cannot create tasks. You can only create subtasks for assigned tasks." 
-      }, { status: 403 });
+      if (!isPersonal) {
+        return NextResponse.json({
+          error: "Team members can only create personal tasks.",
+        }, { status: 403 });
+      }
+
+      const task = await prisma.task.create({
+        data: {
+          ...baseData,
+          projectId: null,
+          creatorId: user.id,
+          assigneeId: user.id,
+          parentTaskId: null,
+        },
+      });
+
+      return NextResponse.json({ success: true, task });
     }
 
     // INDIVIDUAL can only create tasks for themselves
     if (user.role === "INDIVIDUAL") {
       const task = await prisma.task.create({
         data: {
-          title,
-          description,
+          ...baseData,
           projectId: projectId || null,
           assigneeId: user.id,
           creatorId: user.id,
-          dueDate: dueDate ? new Date(dueDate) : null,
         },
       });
       return NextResponse.json({ success: true, task });
     }
 
-    // MANAGER and TEAM_LEAD must specify assigneeId
+    // TEAM_LEAD personal tasks (self-managed)
+    if (user.role === "TEAM_LEAD" && isPersonal) {
+      const task = await prisma.task.create({
+        data: {
+          ...baseData,
+          projectId: null,
+          creatorId: user.id,
+          assigneeId: user.id,
+          parentTaskId: null,
+        },
+      });
+
+      return NextResponse.json({ success: true, task });
+    }
+
+    // Remaining cases: MANAGER and TEAM_LEAD creating organizational tasks
     if (!assigneeId) {
-      return NextResponse.json({ 
-        error: "Assignee required. Select a team member to assign this task." 
+      return NextResponse.json({
+        error: "Assignee required. Select a team member to assign this task.",
       }, { status: 400 });
     }
 
-    // Verify assignee is valid for the creator's role
     const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
     if (!assignee) {
       return NextResponse.json({ error: "Invalid assignee" }, { status: 400 });
     }
 
-    // MANAGER can only assign to TEAM_LEADs in their organization
     if (user.role === "MANAGER") {
       const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
       if (!org || assignee.role !== "TEAM_LEAD" || assignee.organizationId !== org.id) {
-        return NextResponse.json({ 
-          error: "Managers can only assign tasks to Team Leads in their organization" 
+        return NextResponse.json({
+          error: "Managers can only assign tasks to Team Leads in their organization",
         }, { status: 403 });
       }
     }
 
-    // TEAM_LEAD can only assign to their TEAM_MEMBERs
     if (user.role === "TEAM_LEAD") {
       if (assignee.role !== "TEAM_MEMBER" || assignee.teamLeadId !== user.id) {
-        return NextResponse.json({ 
-          error: "Team Leads can only assign tasks to their team members" 
+        return NextResponse.json({
+          error: "Team Leads can only assign tasks to their team members",
         }, { status: 403 });
       }
     }
 
     const task = await prisma.task.create({
       data: {
-        title,
-        description,
+        ...baseData,
         projectId: projectId || null,
         assigneeId,
         creatorId: user.id,
-        dueDate: dueDate ? new Date(dueDate) : null,
       },
     });
 

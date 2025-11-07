@@ -61,8 +61,8 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 # Copy package.json for prisma commands
 COPY --from=builder /app/package.json ./package.json
 
-# Set correct permissions
-RUN chown -R nextjs:nodejs /app
+# Set correct permissions (ignore errors on host filesystems that don't support chown, e.g. Windows bind mounts)
+RUN chown -R nextjs:nodejs /app || true
 
 # Switch to non-root user
 USER nextjs
