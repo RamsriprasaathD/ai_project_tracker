@@ -28,14 +28,18 @@ async function calculateUsage(userId: string) {
   return notesTotal + attachmentsTotal;
 }
 
-export async function DELETE(req: Request, { params }: { params: { noteId: string } }) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ noteId: string }> }
+) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let noteId = params?.noteId;
+    const resolvedParams = await params;
+    let noteId = resolvedParams?.noteId;
     if (!noteId) {
       const url = new URL(req.url);
       const segments = url.pathname.split("/").filter(Boolean);
