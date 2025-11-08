@@ -22,6 +22,7 @@ export default function Navbar() {
     { label: "Projects", path: "/projects" },
     { label: "Tasks", path: "/tasks" },
     { label: "Insights", path: "/insights" },
+    { label: "Notes", path: "/notes" },
   ];
 
   return (

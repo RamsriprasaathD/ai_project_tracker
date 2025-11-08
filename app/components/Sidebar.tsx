@@ -12,6 +12,7 @@ export default function Sidebar() {
     { name: "Projects", icon: Folder, path: "/projects" },
     { name: "Tasks", icon: CheckSquare, path: "/tasks" },
     { name: "Insights", icon: Brain, path: "/insights" },
+    { name: "Notes", icon: Brain, path: "/notes" },
   ];
 
   return (

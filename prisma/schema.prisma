@@ -3,6 +3,33 @@ generator client {
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
+model Note {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String?
+  content    String?
+  sizeBytes  Int               @default(0)
+  attachments NoteAttachment[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+model NoteAttachment {
+  id        String   @id @default(cuid())
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileType  String?
+  sizeBytes Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([noteId])
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -71,6 +98,9 @@ model User {
   // Task relations
   tasksAssigned Task[] @relation("AssigneeTasks")
   createdTasks  Task[] @relation("CreatedTasks")
+
+  // Notes
+  notes Note[]
 
   // Password reset & Insights
   passwordResets    PasswordReset[]
