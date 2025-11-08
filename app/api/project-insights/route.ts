@@ -35,7 +35,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Check permissions - only owner (manager) or assigned TL can view insights
+    // Check permissions - only owner (manager), assigned TL, or assigned team members can view insights
     if (user.role === "MANAGER") {
       // Manager can only see insights for projects in their organization
       const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
@@ -47,8 +47,15 @@ export async function GET(req: Request) {
       if (project.assignedToId !== user.id && project.ownerId !== user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
       }
+    } else if (user.role === "TEAM_MEMBER") {
+      const isAssignedToProject = project.assignedToId === user.id;
+      const hasAssignedTasks = project.tasks.some((t: any) => t.assigneeId === user.id);
+
+      if (!isAssignedToProject && !hasAssignedTasks) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
     } else {
-      return NextResponse.json({ error: "Unauthorized - Only managers and team leads can view project insights" }, { status: 403 });
+      return NextResponse.json({ error: "Unauthorized - Only managers, team leads, and assigned team members can view project insights" }, { status: 403 });
     }
 
     // Calculate project statistics

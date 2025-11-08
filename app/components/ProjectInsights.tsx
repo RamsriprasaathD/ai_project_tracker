@@ -48,29 +48,33 @@ export default function ProjectInsights({ projectId, projectTitle, onClose }: Pr
   }
 
   const formatInsights = (text: string) => {
-    return text.split('\n').map((line, index) => {
-      line = line.trim();
+    const blocks = text.split('\n').map((line) => line.trim()).filter(Boolean);
+    return blocks.map((line, index) => {
       if (!line) return null;
 
-      if (line.includes('**')) {
-        const headerText = line.replace(/\*\*/g, '');
+      const isHeader = line.startsWith("**") && line.endsWith("**");
+      if (isHeader) {
+        const headerText = line.replace(/\*\*/g, "");
         return (
-          <h3 key={index} className="text-lg font-semibold mt-4 mb-2 text-white">
+          <h3 key={`header-${index}`} className="text-lg font-semibold mt-4 mb-2 text-white">
             {headerText}
           </h3>
         );
       }
 
-      if (line.startsWith('•')) {
+      const bulletMarkers = ["•", "-", "*"];
+      const marker = bulletMarkers.find((m) => line.startsWith(m));
+      if (marker) {
+        const content = line.substring(marker.length).trim();
         return (
-          <li key={index} className="text-gray-300 mb-1 ml-4">
-            {line.substring(1).trim()}
+          <li key={`bullet-${index}`} className="text-gray-300 mb-1 ml-4 list-none before:content-['•'] before:mr-2 before:text-purple-300">
+            {content}
           </li>
         );
       }
 
       return (
-        <p key={index} className="text-gray-300 mb-2">
+        <p key={`text-${index}`} className="text-gray-300 mb-2">
           {line}
         </p>
       );

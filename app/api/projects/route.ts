@@ -56,7 +56,10 @@ export async function GET(req: Request) {
     if (user.role === "TEAM_MEMBER") {
       const projects = await prisma.project.findMany({
         where: {
-          tasks: { some: { assigneeId: user.id } },
+          OR: [
+            { assignedToId: user.id },
+            { tasks: { some: { assigneeId: user.id } } },
+          ],
         },
         include: includeOptions,
         orderBy: { createdAt: "desc" },
@@ -97,16 +100,10 @@ export async function POST(req: Request) {
     const { title, description, assignedToId, deadline } = await req.json();
     if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
-    // TEAM_MEMBER and TEAM_LEAD cannot create projects
+    // TEAM_MEMBER cannot create projects
     if (user.role === "TEAM_MEMBER") {
       return NextResponse.json({ 
         error: "Team members cannot create projects. Only view assigned projects." 
-      }, { status: 403 });
-    }
-
-    if (user.role === "TEAM_LEAD") {
-      return NextResponse.json({ 
-        error: "Team leads cannot create projects. Only managers can create projects for team leads." 
       }, { status: 403 });
     }
 
@@ -154,6 +151,34 @@ export async function POST(req: Request) {
           ownerId: user.id,
           assignedToId,
           organizationId,
+        },
+      });
+
+      return NextResponse.json({ success: true, project });
+    }
+
+    if (user.role === "TEAM_LEAD") {
+      if (!assignedToId) {
+        return NextResponse.json({ 
+          error: "Assignee required. Select a team member to assign this project." 
+        }, { status: 400 });
+      }
+
+      const assignee = await prisma.user.findUnique({ where: { id: assignedToId } });
+      if (!assignee || assignee.role !== "TEAM_MEMBER" || assignee.teamLeadId !== user.id) {
+        return NextResponse.json({ 
+          error: "Invalid assignee. Team Leads can only assign projects to their team members." 
+        }, { status: 403 });
+      }
+
+      const project = await prisma.project.create({
+        data: {
+          title,
+          description,
+          deadline: deadline ? new Date(deadline) : null,
+          ownerId: user.id,
+          assignedToId,
+          organizationId: null,
         },
       });
 

@@ -72,7 +72,10 @@ export default function ProjectsPage() {
     fetchProjects();
   }, []);
 
-  const canCreateProjects = currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL";
+  const canCreateProjects =
+    currentUser?.role === "MANAGER" ||
+    currentUser?.role === "INDIVIDUAL" ||
+    currentUser?.role === "TEAM_LEAD";
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 transition-colors duration-200">
@@ -103,8 +106,10 @@ export default function ProjectsPage() {
                 </button>
               </div>
               <p className="text-gray-600 text-sm">
-                {currentUser?.role === "MANAGER" 
+                {currentUser?.role === "MANAGER"
                   ? "Create projects and assign them to your Team Leads"
+                  : currentUser?.role === "TEAM_LEAD"
+                  ? "Create projects for your team members and track their progress"
                   : "Create and manage your personal projects"}
               </p>
             </div>

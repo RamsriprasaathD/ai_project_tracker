@@ -137,13 +137,13 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
         </div>
       )}
 
-      {currentUser?.role === "TEAM_MEMBER" && (
+      {isPersonal && (
         <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          Personal task mode is enabled. These tasks remain private to you and do not appear in your team lead's dashboard.
+          Personal task mode is enabled. These tasks remain private to you and do not appear in team dashboards.
         </div>
       )}
 
-      {currentUser?.role === "TEAM_LEAD" && (
+      {(currentUser?.role === "TEAM_LEAD" || currentUser?.role === "MANAGER") && (
         <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
           <input
             type="checkbox"

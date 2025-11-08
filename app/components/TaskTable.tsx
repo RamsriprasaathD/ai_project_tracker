@@ -56,7 +56,7 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
         {tasks.map((t) => {
           const isAssignedToUser = t.assigneeId === currentUser?.id;
           const canManageSubtasks = currentUser?.role === "TEAM_MEMBER" && isAssignedToUser;
-          const canUpdateStatus = isAssignedToUser || t.creatorId === currentUser?.id || currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD";
+          const canUpdateStatus = isAssignedToUser;
           const isExpanded = expandedTasks.has(t.id);
 
           return (

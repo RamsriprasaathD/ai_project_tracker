@@ -20,8 +20,11 @@ export async function GET(req: Request) {
           include: { assignedTo: true, tasks: true },
         });
         tasks = await prisma.task.findMany({
-          where: { project: { organizationId: org.id } },
-          include: { assignee: true, project: true },
+          where: {
+            parentTaskId: null,
+            project: { organizationId: org.id },
+          },
+          include: { assignee: true, project: true, subtasks: true },
         });
       }
     } else if (user.role === "TEAM_LEAD") {
@@ -36,17 +39,18 @@ export async function GET(req: Request) {
       });
       tasks = await prisma.task.findMany({
         where: {
+          parentTaskId: null,
           OR: [
             { assigneeId: user.id },
             { creatorId: user.id },
             { assignee: { teamLeadId: user.id } },
           ],
         },
-        include: { assignee: true, project: true },
+        include: { assignee: true, project: true, subtasks: true },
       });
     } else if (user.role === "TEAM_MEMBER") {
       tasks = await prisma.task.findMany({
-        where: { assigneeId: user.id },
+        where: { parentTaskId: null, assigneeId: user.id },
         include: { assignee: true, project: true, subtasks: true },
       });
       projects = await prisma.project.findMany({
@@ -61,8 +65,11 @@ export async function GET(req: Request) {
         include: { tasks: true },
       });
       tasks = await prisma.task.findMany({
-        where: { OR: [{ assigneeId: user.id }, { creatorId: user.id }] },
-        include: { assignee: true, project: true },
+        where: {
+          parentTaskId: null,
+          OR: [{ assigneeId: user.id }, { creatorId: user.id }],
+        },
+        include: { assignee: true, project: true, subtasks: true },
       });
     }
 

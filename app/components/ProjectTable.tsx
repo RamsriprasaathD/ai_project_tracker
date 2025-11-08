@@ -1,13 +1,29 @@
 // app/components/ProjectTable.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProjectInsights from "./ProjectInsights";
 
-export default function ProjectTable({ projects = [], currentUser, onRefresh }: { projects?: any[], currentUser: any, onRefresh?: () => Promise<void> }) {
+type ProjectTableProps = {
+  projects?: any[];
+  currentUser: any;
+  onRefresh?: () => Promise<void>;
+};
+
+export default function ProjectTable({ projects = [], currentUser, onRefresh }: ProjectTableProps) {
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<{ id: string; title: string } | null>(null);
+
+  const emptyMessage = useMemo(() => {
+    if (currentUser?.role === "TEAM_MEMBER") {
+      return "No projects assigned to you yet. Your team lead will add you when work is ready.";
+    }
+    if (currentUser?.role === "TEAM_LEAD") {
+      return "No projects assigned to you yet. Your manager will assign projects.";
+    }
+    return "No projects found. Create your first project!";
+  }, [currentUser?.role]);
 
   async function handleDelete(projectId: string) {
     if (!confirm("Delete this project? This will also delete all associated tasks.")) return;
@@ -22,7 +38,9 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
         alert(data.error || "Failed to delete project");
         return;
       }
-      if (onRefresh) await onRefresh();
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (err) {
       alert("Error deleting project");
     }
@@ -32,13 +50,7 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
     return (
       <div className="bg-gray-900/80 border border-gray-800 p-4 rounded-xl">
         <h2 className="text-xl font-semibold mb-4 text-blue-400">Projects</h2>
-        <p className="text-gray-400 text-center py-8">
-          {currentUser?.role === "TEAM_MEMBER" 
-            ? "No projects with assigned tasks yet."
-            : currentUser?.role === "TEAM_LEAD"
-            ? "No projects assigned to you yet. Your manager will assign projects."
-            : "No projects found. Create your first project!"}
-        </p>
+        <p className="text-gray-400 text-center py-8">{emptyMessage}</p>
       </div>
     );
   }
@@ -47,62 +59,88 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
     <div className="bg-gray-900/80 border border-gray-800 p-4 rounded-xl">
       <h2 className="text-xl font-semibold mb-4 text-blue-400">Projects</h2>
       <div className="space-y-3">
-        {projects.map((p) => (
-          <div key={p.id} className="bg-gray-800 p-4 rounded-lg hover:bg-gray-750 transition border border-gray-700 hover:border-blue-500">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="font-semibold text-white text-lg mb-1">{p.title}</div>
-                <div className="text-sm text-gray-400 mb-2">{p.description || "No description"}</div>
-                
-                <div className="space-y-1">
-                  {p.deadline && (
-                    <div className="text-xs text-orange-400">
-                      📅 Deadline: {new Date(p.deadline).toLocaleDateString()}
-                    </div>
-                  )}
-                  {p.assignedTo && (
-                    <div className="text-xs text-cyan-400">
-                      👤 Assigned to: {p.assignedTo.name || p.assignedTo.email}
-                    </div>
-                  )}
-                  {p.owner && currentUser?.role !== "INDIVIDUAL" && (
-                    <div className="text-xs text-purple-400">
-                      📋 Created by: {p.owner.name || p.owner.email}
-                    </div>
-                  )}
-                  {p.tasks && p.tasks.length > 0 && (
-                    <div className="text-xs text-green-400">
-                      ✓ {p.tasks.length} task{p.tasks.length !== 1 ? 's' : ''}
-                    </div>
-                  )}
+        {projects.map((project) => {
+          const totalTasks = project.tasks?.length ?? project._count?.tasks ?? 0;
+          const completedTasks = project.tasks
+            ? project.tasks.filter((task: any) => task.status === "DONE").length
+            : project.completedTasks ?? 0;
+          const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : null;
+
+          const canViewProject = ["MANAGER", "TEAM_LEAD", "TEAM_MEMBER"].includes(currentUser?.role);
+          const canSeeInsights = canViewProject;
+          const canDelete = currentUser?.id === project.ownerId || currentUser?.role === "MANAGER";
+
+          return (
+            <div
+              key={project.id}
+              className="bg-gray-800 p-4 rounded-lg hover:bg-gray-750 transition border border-gray-700 hover:border-blue-500"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="font-semibold text-white text-lg mb-1">{project.title}</div>
+                  <div className="text-sm text-gray-400 mb-2">{project.description || "No description"}</div>
+
+                  <div className="space-y-1">
+                    {project.deadline && (
+                      <div className="text-xs text-orange-400">
+                        📅 Deadline: {new Date(project.deadline).toLocaleDateString()}
+                      </div>
+                    )}
+                    {project.assignedTo && (
+                      <div className="text-xs text-cyan-400">
+                        👤 Assigned to: {project.assignedTo.name || project.assignedTo.email}
+                      </div>
+                    )}
+                    {project.owner && currentUser?.role !== "INDIVIDUAL" && (
+                      <div className="text-xs text-purple-400">
+                        📋 Created by: {project.owner.name || project.owner.email}
+                      </div>
+                    )}
+                    {totalTasks > 0 && (
+                      <div className="text-xs text-green-400">
+                        ✓ {totalTasks} task{totalTasks !== 1 ? "s" : ""}
+                      </div>
+                    )}
+                    {progress !== null && (
+                      <div className="pt-2">
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                          <span>Progress</span>
+                          <span className="text-gray-200 font-medium">{progress}%</span>
+                        </div>
+                        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-emerald-500"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              
+
               <div className="flex gap-2 ml-4">
-                {/* View Details button for managers and team leads */}
-                {(currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && (
-                  <button 
-                    onClick={() => router.push(`/project/${p.id}`)} 
+                {canViewProject && (
+                  <button
+                    onClick={() => router.push(`/project/${project.id}`)}
                     className="text-blue-400 hover:text-blue-300 text-sm px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-400/10 transition"
                   >
-                    Manage Tasks
+                    {currentUser?.role === "TEAM_MEMBER" ? "View Project" : "Manage Tasks"}
                   </button>
                 )}
-                
-                {/* Insights button for managers and team leads */}
-                {(currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && (
-                  <button 
-                    onClick={() => setSelectedProject({ id: p.id, title: p.title })} 
+
+                {canSeeInsights && (
+                  <button
+                    onClick={() => setSelectedProject({ id: project.id, title: project.title })}
                     className="text-purple-400 hover:text-purple-300 text-sm px-3 py-1 rounded border border-purple-400/30 hover:bg-purple-400/10 transition"
                   >
                     AI Insights
                   </button>
                 )}
-                
-                {/* Only allow delete for creator or manager */}
-                {(currentUser?.id === p.ownerId || currentUser?.role === "MANAGER") && (
-                  <button 
-                    onClick={() => handleDelete(p.id)} 
+
+                {canDelete && (
+                  <button
+                    onClick={() => handleDelete(project.id)}
                     className="text-red-400 hover:text-red-300 text-sm px-3 py-1 rounded border border-red-400/30 hover:bg-red-400/10 transition"
                   >
                     Delete
@@ -110,11 +148,10 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
                 )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Project Insights Modal */}
       {selectedProject && (
         <ProjectInsights
           projectId={selectedProject.id}

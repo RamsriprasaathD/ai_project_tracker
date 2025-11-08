@@ -40,16 +40,18 @@ export async function GET(req: Request) {
 
     if (user.role === "MANAGER") {
       const org = await prisma.organization.findFirst({ where: { managerId: user.id } });
-      if (org) {
-        tasks = await prisma.task.findMany({
-          where: {
-            parentTaskId: null,
-            project: { organizationId: org.id },
-          },
-          include: includeOptions,
-          orderBy: { createdAt: "desc" },
-        });
-      }
+      if (!org) return NextResponse.json({ tasks: [] });
+      tasks = await prisma.task.findMany({
+        where: {
+          parentTaskId: null,
+          OR: [
+            { project: { organizationId: org.id } },
+            { assigneeId: user.id, projectId: null },
+          ],
+        },
+        include: includeOptions,
+        orderBy: { createdAt: "desc" },
+      });
     } else if (user.role === "TEAM_LEAD") {
       tasks = await prisma.task.findMany({
         where: {
@@ -160,6 +162,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, task });
     }
 
+    if (user.role === "MANAGER" && isPersonal) {
+      const task = await prisma.task.create({
+        data: {
+          ...baseData,
+          projectId: null,
+          creatorId: user.id,
+          assigneeId: user.id,
+          parentTaskId: null,
+        },
+      });
+
+      return NextResponse.json({ success: true, task });
+    }
+
     // Remaining cases: MANAGER and TEAM_LEAD creating organizational tasks
     if (!assigneeId) {
       return NextResponse.json({
@@ -222,11 +238,7 @@ export async function PUT(req: Request) {
     if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
     // Allow status updates for assignee, creator, or TL/Manager
-    const canUpdate = 
-      task.assigneeId === user.id || 
-      task.creatorId === user.id || 
-      user.role === "MANAGER" || 
-      user.role === "TEAM_LEAD";
+    const canUpdate = task.assigneeId === user.id;
 
     if (!canUpdate) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

@@ -12,8 +12,10 @@ export default function CreateProjectModal({ currentUser, onClose, onSuccess }: 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
-    fetchAssignableUsers();
-  }, []);
+    if (currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") {
+      fetchAssignableUsers();
+    }
+  }, [currentUser?.role]);
 
   async function fetchAssignableUsers() {
     try {
@@ -38,8 +40,12 @@ export default function CreateProjectModal({ currentUser, onClose, onSuccess }: 
       return;
     }
 
-    if (currentUser?.role === "MANAGER" && !assignedTo) {
-      setError("Please select a Team Lead to assign this project");
+    if ((currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD") && !assignedTo) {
+      setError(
+        currentUser?.role === "MANAGER"
+          ? "Please select a Team Lead to assign this project"
+          : "Please select a Team Member to assign this project"
+      );
       return;
     }
 
@@ -55,7 +61,7 @@ export default function CreateProjectModal({ currentUser, onClose, onSuccess }: 
           title,
           description,
           deadline,
-          assignedToId: currentUser?.role === "MANAGER" ? assignedTo : undefined,
+          assignedToId: currentUser?.role === "MANAGER" || currentUser?.role === "TEAM_LEAD" ? assignedTo : undefined,
         }),
       });
 
@@ -81,16 +87,17 @@ export default function CreateProjectModal({ currentUser, onClose, onSuccess }: 
   }
 
   // Role-based UI rendering
-  const canCreateProjects = currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL";
+  const canCreateProjects =
+    currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL" || currentUser?.role === "TEAM_LEAD";
 
   if (!canCreateProjects) {
     return (
       <div className="bg-gray-900 border border-gray-700 p-6 rounded-xl text-white">
         <h3 className="text-xl font-semibold mb-4 text-red-400">Access Denied</h3>
         <p className="text-gray-400">
-          {currentUser?.role === "TEAM_LEAD" 
-            ? "Team Leads cannot create projects. Only Managers can create projects and assign them to you."
-            : "Team Members cannot create projects. View assigned projects from your Team Lead."}
+          {currentUser?.role === "TEAM_MEMBER"
+            ? "Team Members cannot create projects. View assigned projects from your Team Lead."
+            : "You do not have permission to create projects."}
         </p>
         {onClose && (
           <button onClick={onClose} className="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">
@@ -152,6 +159,27 @@ export default function CreateProjectModal({ currentUser, onClose, onSuccess }: 
               </option>
             ))}
           </select>
+        </>
+      )}
+
+      {currentUser?.role === "TEAM_LEAD" && (
+        <>
+          <label className="block text-sm text-gray-400 mb-1">Assign to Team Member *</label>
+          <select
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-3 text-white"
+          >
+            <option value="">Select Team Member</option>
+            {assignableUsers.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name || u.email}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-amber-400 mb-3">
+            Projects created here stay within your team. Only you and the selected team member can view them.
+          </p>
         </>
       )}
 

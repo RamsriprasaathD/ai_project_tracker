@@ -261,15 +261,15 @@ export default function DashboardPage() {
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-8 transition-colors duration-200">
                 <p className="text-gray-700 text-sm">
                   {currentUser?.role === "MANAGER" && "You can create projects and assign them to your Team Leads."}
-                  {currentUser?.role === "TEAM_LEAD" && "You can create tasks and assign them to your Team Members."}
-                  {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned tasks and create sub-tasks to organize your work."}
+                  {currentUser?.role === "TEAM_LEAD" && "You can create projects and tasks for your team members."}
+                  {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned projects and update task statuses so your team lead sees progress."}
                   {currentUser?.role === "INDIVIDUAL" && "You have full control over your personal projects and tasks."}
                 </p>
               </div>
 
               {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {(currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL") && (
+                {(currentUser?.role === "MANAGER" || currentUser?.role === "INDIVIDUAL" || currentUser?.role === "TEAM_LEAD") && (
                   <button
                     onClick={() => router.push("/projects")}
                     className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 rounded-xl text-left transition-all duration-200 shadow-md hover:shadow-lg"
@@ -366,19 +366,33 @@ export default function DashboardPage() {
                   </div>
                 </>
               ) : currentUser?.role === "TEAM_MEMBER" ? (
-                // Team Member View: Only tasks, no project hierarchy
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4 text-gray-900">My Assigned Tasks</h2>
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4 transition-colors duration-200">
+                // Team Member View: Projects from TL + assigned tasks
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-emerald-50 border border-indigo-200 rounded-xl p-4 transition-colors duration-200">
                     <p className="text-sm text-gray-700">
-                      Focus on completing your assigned tasks. You can create private sub-tasks to organize your work.
+                      Projects your Team Lead assigns appear below with a live progress bar. Update your task statuses to keep the project bar in sync for your TL.
                     </p>
                   </div>
-                  <TaskTable 
-                    tasks={tasks} 
-                    currentUser={currentUser} 
+
+                  <ProjectTable
+                    projects={projects}
+                    currentUser={currentUser}
                     onRefresh={refreshData}
                   />
+
+                  <div>
+                    <h2 className="text-2xl font-semibold mb-4 text-gray-900">My Assigned Tasks</h2>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4 transition-colors duration-200">
+                      <p className="text-sm text-gray-700">
+                        Only you can change these task statuses. Every update instantly reflects back to your Team Lead.
+                      </p>
+                    </div>
+                    <TaskTable 
+                      tasks={tasks} 
+                      currentUser={currentUser} 
+                      onRefresh={refreshData}
+                    />
+                  </div>
                 </div>
               ) : (
                 // Manager/Individual View: Standard layout
