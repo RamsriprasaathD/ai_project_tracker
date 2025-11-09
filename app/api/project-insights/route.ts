@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromToken } from "@/lib/auth";
+import { calculateTaskRisk, summarizeRisks } from "@/lib/risk";
 
 export async function GET(req: Request) {
   try {
@@ -64,7 +65,7 @@ export async function GET(req: Request) {
     const inProgressTasks = project.tasks.filter((t: any) => t.status === "IN_PROGRESS").length;
     const blockedTasks = project.tasks.filter((t: any) => t.status === "BLOCKED").length;
     const todoTasks = project.tasks.filter((t: any) => t.status === "TODO").length;
-    
+    const riskSummary = summarizeRisks(project.tasks);
     const completionPercentage = totalTasks > 0 
       ? Math.round((completedTasks / totalTasks) * 100) 
       : 0;
@@ -109,6 +110,7 @@ export async function GET(req: Request) {
         blockedTasks,
         todoTasks,
         completionPercentage,
+        riskSummary,
       },
       tasks: project.tasks.map((t: any) => ({
         title: t.title,
@@ -116,6 +118,7 @@ export async function GET(req: Request) {
         assignee: t.assignee?.name || t.assignee?.email,
         dueDate: t.dueDate,
         subtasksCount: t.subtasks?.length || 0,
+        risk: calculateTaskRisk(t),
       })),
       teamLeadWorkload,
     };

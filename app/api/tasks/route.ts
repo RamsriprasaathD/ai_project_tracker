@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromToken } from "@/lib/auth";
+import { calculateTaskRisk, summarizeRisks } from "@/lib/risk";
 
 /**
  * GET /api/tasks
@@ -25,15 +26,32 @@ export async function GET(req: Request) {
         where: { id },
         include: includeOptions,
       });
-      
+
+      if (!task) {
+        return NextResponse.json({ task: null });
+      }
+
       // Hide subtasks from everyone except the assigned team member
-      if (task && task.subtasks && user.role !== "TEAM_MEMBER") {
+      if (task.subtasks && user.role !== "TEAM_MEMBER") {
         task.subtasks = [];
-      } else if (task && task.subtasks && user.role === "TEAM_MEMBER" && task.assigneeId !== user.id) {
+      } else if (task.subtasks && user.role === "TEAM_MEMBER" && task.assigneeId !== user.id) {
         task.subtasks = [];
       }
-      
-      return NextResponse.json({ task });
+
+      const risk = calculateTaskRisk(task);
+      const serializedTask = {
+        ...task,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        createdAt: task.createdAt ? task.createdAt.toISOString() : null,
+        updatedAt: task.updatedAt ? task.updatedAt.toISOString() : null,
+        aiRiskScore: risk.riskScore,
+        aiRiskSeverity: risk.severity,
+        isOverdue: risk.isOverdue,
+        dueInDays: risk.dueInDays,
+        overdueDays: risk.overdueDays,
+      };
+
+      return NextResponse.json({ task: serializedTask });
     }
 
     let tasks: any[] = [];
@@ -83,7 +101,23 @@ export async function GET(req: Request) {
     // Note: Subtasks are only visible to team members who are assigned to the task
     // This ensures privacy - team leads and managers cannot see how team members break down their work
 
-    return NextResponse.json({ tasks });
+    const riskSummary = summarizeRisks(tasks);
+    const serializedTasks = tasks.map((task: any) => {
+      const risk = calculateTaskRisk(task);
+      return {
+        ...task,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        createdAt: task.createdAt ? task.createdAt.toISOString() : null,
+        updatedAt: task.updatedAt ? task.updatedAt.toISOString() : null,
+        aiRiskScore: risk.riskScore,
+        aiRiskSeverity: risk.severity,
+        isOverdue: risk.isOverdue,
+        dueInDays: risk.dueInDays,
+        overdueDays: risk.overdueDays,
+      };
+    });
+
+    return NextResponse.json({ tasks: serializedTasks, riskSummary });
   } catch (err: any) {
     console.error("❌ /api/tasks GET error:", err);
     return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
