@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
-import InsightsPanel from "../components/InsightsPanel";
 import CreateProjectModal from "../components/modals/CreateProjectModal";
+import ProjectInsights from "../components/ProjectInsights";
 
 interface Project {
   id: string;
@@ -19,7 +19,7 @@ interface Project {
 export default function ProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<{ id: string; title: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -134,9 +134,9 @@ export default function ProjectsPage() {
               projects.map((p) => (
                 <div
                   key={p.id}
-                  onClick={() => setSelectedProjectId(p.id)}
+                  onClick={() => setSelectedProject({ id: p.id, title: p.title })}
                   className={`cursor-pointer bg-white border rounded-xl p-5 hover:shadow-lg transition-all duration-300 ${
-                    selectedProjectId === p.id
+                    selectedProject?.id === p.id
                       ? "ring-2 ring-blue-500 border-blue-500 shadow-md"
                       : "border-gray-200 hover:border-blue-300"
                   }`}
@@ -167,12 +167,6 @@ export default function ProjectsPage() {
             )}
           </div>
 
-          {/* Insights Panel */}
-          {selectedProjectId && (
-            <div className="mt-8">
-              <InsightsPanel projectId={selectedProjectId} />
-            </div>
-          )}
         </main>
       </div>
 
@@ -190,6 +184,14 @@ export default function ProjectsPage() {
             />
           </div>
         </div>
+      )}
+
+      {selectedProject && (
+        <ProjectInsights
+          projectId={selectedProject.id}
+          projectTitle={selectedProject.title}
+          onClose={() => setSelectedProject(null)}
+        />
       )}
     </div>
   );
