@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
@@ -20,11 +21,13 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({ totalProjects: 0, totalTasks: 0, completedTasks: 0, inProgressTasks: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Fetch current user
-  async function fetchCurrentUser() {
+  const fetchCurrentUser = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) return router.push("/login");
+      if (!token) {
+        router.push("/login");
+        return null;
+      }
 
       const res = await fetch("/api/users", {
         headers: { Authorization: `Bearer ${token}` },
@@ -34,65 +37,77 @@ export default function DashboardPage() {
       if (res.ok && data.user) {
         setCurrentUser(data.user);
         localStorage.setItem("userRole", data.user.role);
+        return data.user;
       }
     } catch (err) {
       console.error("Error fetching user:", err);
     }
-  }
+    return null;
+  }, [router]);
 
-  // Fetch projects
-  async function fetchProjects() {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+  const partitionProjectsForTeamLead = useCallback((projectsList: any[], user: any) => {
+    if (!user || user.role !== "TEAM_LEAD") return;
 
-      const res = await fetch("/api/projects", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+    const assigned = projectsList.filter((p: any) => p.assignedToId === user.id && p.ownerId !== user.id);
+    const own = projectsList.filter((p: any) => p.ownerId === user.id);
+    setAssignedProjects(assigned);
+    setOwnProjects(own);
+  }, []);
 
-      if (res.ok) {
+  const fetchProjects = useCallback(
+    async (userOverride?: any) => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return [] as any[];
+
+        const res = await fetch("/api/projects", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to fetch projects");
+        }
+
         const allProjects = data.projects || [];
         setProjects(allProjects);
-        
-        // For Team Leads, separate projects
-        if (currentUser?.role === "TEAM_LEAD") {
-          const assigned = allProjects.filter((p: any) => 
-            p.assignedToId === currentUser.id && p.ownerId !== currentUser.id
-          );
-          const own = allProjects.filter((p: any) => 
-            p.ownerId === currentUser.id
-          );
-          setAssignedProjects(assigned);
-          setOwnProjects(own);
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching projects:", err);
-    }
-  }
 
-  // Fetch tasks
-  async function fetchTasks() {
+        const activeUser = userOverride ?? currentUser;
+        partitionProjectsForTeamLead(allProjects, activeUser);
+
+        return allProjects;
+      } catch (err) {
+        console.error("Error fetching projects:", err);
+        return [] as any[];
+      }
+    },
+    [currentUser, partitionProjectsForTeamLead]
+  );
+
+  const fetchTasks = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) return [] as any[];
 
       const res = await fetch("/api/tasks", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
 
-      if (res.ok) {
-        setTasks(data.tasks || []);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch tasks");
       }
+
+      const fetchedTasks = data.tasks || [];
+      setTasks(fetchedTasks);
+      return fetchedTasks;
     } catch (err) {
       console.error("Error fetching tasks:", err);
+      return [] as any[];
     }
-  }
+  }, []);
 
-  // Fetch team leads (for Manager only)
-  async function fetchTeamLeads() {
+  const fetchTeamLeads = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
@@ -103,87 +118,72 @@ export default function DashboardPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Filter only team leads
         const tls = (data.users || []).filter((u: any) => u.role === "TEAM_LEAD");
         setTeamLeads(tls);
       }
     } catch (err) {
       console.error("Error fetching team leads:", err);
     }
-  }
+  }, []);
 
-  // Calculate stats based on current projects and tasks
-  function calculateStats(projectsList: any[], tasksList: any[]) {
+  const calculateStats = useCallback((projectsList: any[], tasksList: any[]) => {
     const completed = tasksList.filter((t: any) => t.status === "DONE").length;
     const inProgress = tasksList.filter((t: any) => t.status === "IN_PROGRESS").length;
-    
+
     setStats({
       totalProjects: projectsList.length,
       totalTasks: tasksList.length,
       completedTasks: completed,
       inProgressTasks: inProgress,
     });
-  }
+  }, []);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    await fetchCurrentUser();
-    const token = localStorage.getItem("token");
-    
-    // Fetch projects
-    const projectsRes = await fetch("/api/projects", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const projectsData = await projectsRes.json();
-    const fetchedProjects = projectsData.projects || [];
-    setProjects(fetchedProjects);
-    
-    // Separate projects for Team Lead
-    if (currentUser?.role === "TEAM_LEAD") {
-      const assigned = fetchedProjects.filter((p: any) => 
-        p.assignedToId === currentUser.id && p.ownerId !== currentUser.id
-      );
-      const own = fetchedProjects.filter((p: any) => 
-        p.ownerId === currentUser.id
-      );
-      setAssignedProjects(assigned);
-      setOwnProjects(own);
-    }
-    
-    // Fetch tasks
-    const tasksRes = await fetch("/api/tasks", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const tasksData = await tasksRes.json();
-    const fetchedTasks = tasksData.tasks || [];
-    setTasks(fetchedTasks);
-    
-    // Fetch team leads for Manager
-    if (currentUser?.role === "MANAGER") {
+    const user = await fetchCurrentUser();
+    const [projectsList, tasksList] = await Promise.all([
+      fetchProjects(user),
+      fetchTasks(),
+    ]);
+
+    if (user?.role === "MANAGER") {
       await fetchTeamLeads();
     }
-    
-    // Calculate stats after both are loaded
-    calculateStats(fetchedProjects, fetchedTasks);
-    
-    setLoading(false);
-  }
 
-  async function refreshData() {
-    await fetchProjects();
-    await fetchTasks();
-  }
+    calculateStats(projectsList, tasksList);
+    setLoading(false);
+  }, [calculateStats, fetchCurrentUser, fetchProjects, fetchTasks, fetchTeamLeads]);
+
+  const refreshData = useCallback(async () => {
+    await Promise.all([fetchProjects(), fetchTasks()]);
+  }, [fetchProjects, fetchTasks]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   // Recalculate stats whenever projects or tasks change
   useEffect(() => {
     if (projects.length >= 0 || tasks.length >= 0) {
       calculateStats(projects, tasks);
     }
-  }, [projects, tasks]);
+  }, [calculateStats, projects, tasks]);
+
+  useEffect(() => {
+    if (currentUser?.role === "TEAM_LEAD") {
+      partitionProjectsForTeamLead(projects, currentUser);
+    }
+  }, [currentUser, partitionProjectsForTeamLead, projects]);
+
+  useEffect(() => {
+    if (currentUser?.role !== "TEAM_LEAD") return;
+
+    const intervalId = setInterval(() => {
+      refreshData();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [currentUser?.role, refreshData]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 transition-colors duration-200">
