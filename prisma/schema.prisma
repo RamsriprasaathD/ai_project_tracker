@@ -135,6 +135,8 @@ model Project {
   assignedToId String?
   assignedTo   User?   @relation("AssignedProjects", fields: [assignedToId], references: [id])
 
+  status TaskStatus @default(TODO)
+
   tasks    Task[]
   insights Insight[]
 

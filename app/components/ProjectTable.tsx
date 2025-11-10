@@ -15,15 +15,52 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<{ id: string; title: string } | null>(null);
 
+  const statusOptions = [
+    { value: "TODO", label: "To Do" },
+    { value: "IN_PROGRESS", label: "In Progress" },
+    { value: "DONE", label: "Done" },
+    { value: "BLOCKED", label: "Blocked" },
+  ];
+
   const emptyMessage = useMemo(() => {
     if (currentUser?.role === "TEAM_MEMBER") {
       return "No projects assigned to you yet. Your team lead will add you when work is ready.";
     }
+
     if (currentUser?.role === "TEAM_LEAD") {
       return "No projects assigned to you yet. Your manager will assign projects.";
     }
+
     return "No projects found. Create your first project!";
   }, [currentUser?.role]);
+
+  async function updateProjectStatus(projectId: string, status: string) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
+
+    try {
+      const res = await fetch("/api/projects", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`!,
+        },
+        body: JSON.stringify({ id: projectId, status }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to update project status");
+        return;
+      }
+
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (err) {
+      alert("Error updating project status");
+    }
+  }
 
   async function handleDelete(projectId: string) {
     if (!confirm("Delete this project? This will also delete all associated tasks.")) return;
@@ -69,6 +106,9 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
           const canManageProjectTasks = ["MANAGER", "TEAM_LEAD"].includes(currentUser?.role);
           const canSeeInsights = ["MANAGER", "TEAM_LEAD", "TEAM_MEMBER"].includes(currentUser?.role);
           const canDelete = currentUser?.id === project.ownerId || currentUser?.role === "MANAGER";
+          const isAssignedToCurrentUser = project.assignedToId === currentUser?.id;
+          const canUpdateProjectStatus = currentUser?.role === "TEAM_MEMBER" && isAssignedToCurrentUser;
+          const status = project.status || "TODO";
 
           return (
             <div
@@ -116,6 +156,39 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">Status</span>
+                  {canUpdateProjectStatus ? (
+                    <select
+                      value={status}
+                      onChange={(e) => updateProjectStatus(project.id, e.target.value)}
+                      className="bg-gray-900 text-gray-100 rounded-md px-3 py-1 text-sm border border-blue-400/40 hover:border-blue-300 transition"
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        status === "DONE"
+                          ? "bg-green-500/20 text-green-200 border border-green-400/30"
+                          : status === "IN_PROGRESS"
+                          ? "bg-blue-500/20 text-blue-200 border border-blue-400/30"
+                          : status === "BLOCKED"
+                          ? "bg-red-500/20 text-red-200 border border-red-400/30"
+                          : "bg-gray-500/20 text-gray-200 border border-gray-400/30"
+                      }`}
+                    >
+                      {statusOptions.find((option) => option.value === status)?.label || status}
+                    </span>
+                  )}
                 </div>
               </div>
 

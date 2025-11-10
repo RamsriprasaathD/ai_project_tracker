@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromToken } from "@/lib/auth";
 
+const VALID_PROJECT_STATUSES = ["TODO", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
+
 /**
  * GET /api/projects
  * Returns projects based on user role
@@ -188,6 +190,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid role" }, { status: 403 });
   } catch (err: any) {
     console.error("❌ /api/projects POST error:", err);
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const token = req.headers.get("authorization")?.split(" ")[1] || "";
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { id, status } = await req.json();
+    if (!id) return NextResponse.json({ error: "Project ID required" }, { status: 400 });
+    if (!status || !VALID_PROJECT_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { assignedToId: true },
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    if (!project.assignedToId || project.assignedToId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const updated = await prisma.project.update({
+      where: { id },
+      data: { status } as any,
+      include: {
+        tasks: true,
+        assignedTo: true,
+        owner: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, project: updated });
+  } catch (err: any) {
+    console.error("❌ /api/projects PUT error:", err);
     return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }
