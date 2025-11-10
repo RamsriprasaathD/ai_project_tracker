@@ -66,8 +66,8 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
             : project.completedTasks ?? 0;
           const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : null;
 
-          const canViewProject = ["MANAGER", "TEAM_LEAD", "TEAM_MEMBER"].includes(currentUser?.role);
-          const canSeeInsights = canViewProject;
+          const canManageProjectTasks = ["MANAGER", "TEAM_LEAD"].includes(currentUser?.role);
+          const canSeeInsights = ["MANAGER", "TEAM_LEAD", "TEAM_MEMBER"].includes(currentUser?.role);
           const canDelete = currentUser?.id === project.ownerId || currentUser?.role === "MANAGER";
 
           return (
@@ -120,12 +120,12 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
               </div>
 
               <div className="flex gap-2 ml-4">
-                {canViewProject && (
+                {canManageProjectTasks && (
                   <button
                     onClick={() => router.push(`/project/${project.id}`)}
                     className="text-blue-400 hover:text-blue-300 text-sm px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-400/10 transition"
                   >
-                    {currentUser?.role === "TEAM_MEMBER" ? "View Project" : "Manage Tasks"}
+                    Manage Tasks
                   </button>
                 )}
 

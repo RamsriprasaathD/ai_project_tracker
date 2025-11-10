@@ -268,7 +268,12 @@ export async function PUT(req: Request) {
     const { id, status, assigneeId } = await req.json();
     if (!id) return NextResponse.json({ error: "Task ID required" }, { status: 400 });
 
-    const task = await prisma.task.findUnique({ where: { id } });
+    const task = await prisma.task.findUnique({
+      where: { id },
+      select: {
+        assigneeId: true,
+      },
+    });
     if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
     // Allow status updates for assignee, creator, or TL/Manager
