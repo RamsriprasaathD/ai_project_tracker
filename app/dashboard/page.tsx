@@ -54,35 +54,29 @@ export default function DashboardPage() {
     setOwnProjects(own);
   }, []);
 
-  const fetchProjects = useCallback(
-    async (userOverride?: any) => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return [] as any[];
+  const fetchProjects = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return [] as any[];
 
-        const res = await fetch("/api/projects", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
+      const res = await fetch("/api/projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || "Failed to fetch projects");
-        }
-
-        const allProjects = data.projects || [];
-        setProjects(allProjects);
-
-        const activeUser = userOverride ?? currentUser;
-        partitionProjectsForTeamLead(allProjects, activeUser);
-
-        return allProjects;
-      } catch (err) {
-        console.error("Error fetching projects:", err);
-        return [] as any[];
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch projects");
       }
-    },
-    [currentUser, partitionProjectsForTeamLead]
-  );
+
+      const allProjects = data.projects || [];
+      setProjects(allProjects);
+
+      return allProjects;
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+      return [] as any[];
+    }
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -142,7 +136,7 @@ export default function DashboardPage() {
     setLoading(true);
     const user = await fetchCurrentUser();
     const [projectsList, tasksList] = await Promise.all([
-      fetchProjects(user),
+      fetchProjects(),
       fetchTasks(),
     ]);
 
@@ -175,15 +169,6 @@ export default function DashboardPage() {
     }
   }, [currentUser, partitionProjectsForTeamLead, projects]);
 
-  useEffect(() => {
-    if (currentUser?.role !== "TEAM_LEAD") return;
-
-    const intervalId = setInterval(() => {
-      refreshData();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [currentUser?.role, refreshData]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 transition-colors duration-200">
@@ -211,6 +196,11 @@ export default function DashboardPage() {
                   <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
                     {currentUser?.role?.replace("_", " ")}
                   </span>
+                  {currentUser?.role === "TEAM_LEAD" && currentUser?.tlIdWithinOrg && (
+                    <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm font-medium">
+                      ID: TL-{currentUser.tlIdWithinOrg}
+                    </span>
+                  )}
                 </p>
               </div>
 
