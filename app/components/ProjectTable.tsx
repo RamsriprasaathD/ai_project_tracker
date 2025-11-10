@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import ProjectInsights from "./ProjectInsights";
 
 type ProjectTableProps = {
@@ -12,7 +11,6 @@ type ProjectTableProps = {
 };
 
 export default function ProjectTable({ projects = [], currentUser, onRefresh }: ProjectTableProps) {
-  const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<{ id: string; title: string } | null>(null);
 
   const statusOptions = [
@@ -110,7 +108,6 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
             : project.completedTasks ?? 0;
           const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : null;
 
-          const canManageProjectTasks = ["MANAGER", "TEAM_LEAD"].includes(currentUser?.role);
           const canSeeInsights = ["MANAGER", "TEAM_LEAD", "TEAM_MEMBER"].includes(currentUser?.role);
           const canDelete = currentUser?.id === project.ownerId || currentUser?.role === "MANAGER";
           const isAssignedToCurrentUser = project.assignedToId === currentUser?.id;
@@ -201,15 +198,6 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
               </div>
 
               <div className="flex gap-2 ml-4">
-                {canManageProjectTasks && (
-                  <button
-                    onClick={() => router.push(`/project/${project.id}`)}
-                    className="text-blue-400 hover:text-blue-300 text-sm px-3 py-1 rounded border border-blue-400/30 hover:bg-blue-400/10 transition"
-                  >
-                    Manage Tasks
-                  </button>
-                )}
-
                 {canSeeInsights && (
                   <button
                     onClick={() => setSelectedProject({ id: project.id, title: project.title })}
