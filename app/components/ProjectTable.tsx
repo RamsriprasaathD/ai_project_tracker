@@ -22,6 +22,13 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
     { value: "BLOCKED", label: "Blocked" },
   ];
 
+  const statusClasses: Record<string, string> = {
+    DONE: "bg-green-500/20 text-green-200 border border-green-400/30",
+    IN_PROGRESS: "bg-blue-500/20 text-blue-200 border border-blue-400/30",
+    BLOCKED: "bg-red-500/20 text-red-200 border border-red-400/30",
+    TODO: "bg-gray-500/20 text-gray-200 border border-gray-400/30",
+  };
+
   const emptyMessage = useMemo(() => {
     if (currentUser?.role === "TEAM_MEMBER") {
       return "No projects assigned to you yet. Your team lead will add you when work is ready.";
@@ -109,6 +116,14 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
           const isAssignedToCurrentUser = project.assignedToId === currentUser?.id;
           const canUpdateProjectStatus = currentUser?.role === "TEAM_MEMBER" && isAssignedToCurrentUser;
           const status = project.status || "TODO";
+          const statusLabel = statusOptions.find((option) => option.value === status)?.label || status;
+          const statusBadge = (
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[status] || statusClasses["TODO"]}`}
+            >
+              {statusLabel}
+            </span>
+          );
 
           return (
             <div
@@ -134,6 +149,11 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
                     {project.owner && currentUser?.role !== "INDIVIDUAL" && (
                       <div className="text-xs text-purple-400">
                         📋 Created by: {project.owner.name || project.owner.email}
+                      </div>
+                    )}
+                    {!canUpdateProjectStatus && (
+                      <div className="text-xs text-blue-200 flex items-center gap-1">
+                        📊 Status: {statusBadge}
                       </div>
                     )}
                     {totalTasks > 0 && (
@@ -175,19 +195,7 @@ export default function ProjectTable({ projects = [], currentUser, onRefresh }: 
                       ))}
                     </select>
                   ) : (
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        status === "DONE"
-                          ? "bg-green-500/20 text-green-200 border border-green-400/30"
-                          : status === "IN_PROGRESS"
-                          ? "bg-blue-500/20 text-blue-200 border border-blue-400/30"
-                          : status === "BLOCKED"
-                          ? "bg-red-500/20 text-red-200 border border-red-400/30"
-                          : "bg-gray-500/20 text-gray-200 border border-gray-400/30"
-                      }`}
-                    >
-                      {statusOptions.find((option) => option.value === status)?.label || status}
-                    </span>
+                    statusBadge
                   )}
                 </div>
               </div>
