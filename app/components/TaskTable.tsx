@@ -54,7 +54,8 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
       <h2 className="text-xl font-semibold mb-4 text-green-400">Tasks</h2>
       <div className="space-y-3">
         {tasks.map((t) => {
-          const isAssignedToUser = t.assigneeId === currentUser?.id;
+          const assigneeId = t.assigneeId || t.assignee?.id;
+          const isAssignedToUser = assigneeId === currentUser?.id;
           const canManageSubtasks = currentUser?.role === "TEAM_MEMBER" && isAssignedToUser;
           const canUpdateStatus = isAssignedToUser;
           const isExpanded = expandedTasks.has(t.id);
