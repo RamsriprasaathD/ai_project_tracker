@@ -108,28 +108,14 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
     }
   }
 
-  // Role-based UI rendering
-  const canCreateTasks = currentUser?.role !== "TEAM_MEMBER";
-
-  if (!canCreateTasks) {
-    return (
-      <div className="bg-white border border-gray-200 p-6 rounded-xl text-gray-900">
-        <h3 className="text-xl font-semibold mb-4 text-red-400">Access Denied</h3>
-        <p className="text-gray-700">
-          Team Members cannot create tasks. You can only create sub-tasks for tasks assigned to you.
-        </p>
-        {onClose && (
-          <button onClick={onClose} className="mt-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg">
-            Close
-          </button>
-        )}
-      </div>
-    );
-  }
+  // Team Members can create personal tasks
+  const isTeamMember = currentUser?.role === "TEAM_MEMBER";
 
   return (
     <div className="bg-white border border-gray-200 p-4 sm:p-6 rounded-xl text-gray-900 max-h-[90vh] overflow-y-auto">
-      <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-400">Create Task</h3>
+      <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-400">
+        {isTeamMember ? "Create Personal Task" : "Create Task"}
+      </h3>
       
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg mb-4">
@@ -138,8 +124,10 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
       )}
 
       {isPersonal && (
-        <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          Personal task mode is enabled. These tasks remain private to you and do not appear in team dashboards.
+        <div className="mb-4 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+          {isTeamMember 
+            ? "Creating a personal task for your own use. This task won't be visible to your organization."
+            : "Personal task mode is enabled. These tasks remain private to you and do not appear in team dashboards."}
         </div>
       )}
 
@@ -251,7 +239,9 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
 
       {(currentUser?.role === "INDIVIDUAL" || isPersonal) && (
         <p className="text-sm text-gray-600 mb-3 italic">
-          This task will be assigned to you.
+          {isTeamMember 
+            ? "This personal task will be assigned to you and visible only to you."
+            : "This task will be assigned to you."}
         </p>
       )}
 
@@ -261,7 +251,7 @@ export default function CreateTaskModal({ currentUser, projectId, onClose, onSuc
           disabled={loading}
           className="flex-1 bg-green-600 hover:bg-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition"
         >
-          {loading ? "Creating..." : "Create Task"}
+          {loading ? "Creating..." : isTeamMember ? "Create Personal Task" : "Create Task"}
         </button>
         {onClose && (
           <button

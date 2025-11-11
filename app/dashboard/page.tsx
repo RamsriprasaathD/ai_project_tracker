@@ -252,7 +252,7 @@ export default function DashboardPage() {
                 <p className="text-gray-700 text-sm">
                   {currentUser?.role === "MANAGER" && "You can create projects and assign them to your Team Leads."}
                   {currentUser?.role === "TEAM_LEAD" && "You can create projects and tasks for your team members."}
-                  {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned projects and update task statuses so your team lead sees progress."}
+                  {currentUser?.role === "TEAM_MEMBER" && "You can view your assigned projects, update task statuses, and create sub-tasks to break down work. Your Team Lead can see your progress and sub-tasks."}
                   {currentUser?.role === "INDIVIDUAL" && "You have full control over your personal projects and tasks."}
                 </p>
               </div>
@@ -270,16 +270,18 @@ export default function DashboardPage() {
                   </button>
                 )}
                 
-                {currentUser?.role !== "TEAM_MEMBER" && (
-                  <button
-                    onClick={() => router.push("/tasks")}
-                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-4 rounded-xl text-left transition-all duration-200 shadow-md hover:shadow-lg"
-                  >
-                    <div className="text-2xl mb-2">✓</div>
-                    <div className="font-semibold text-lg">Create New Task</div>
-                    <div className="text-sm text-green-50 mt-1">Add a task to track</div>
-                  </button>
-                )}
+                <button
+                  onClick={() => router.push("/tasks")}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-4 rounded-xl text-left transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <div className="text-2xl mb-2">✓</div>
+                  <div className="font-semibold text-lg">
+                    {currentUser?.role === "TEAM_MEMBER" ? "Create Personal Task" : "Create New Task"}
+                  </div>
+                  <div className="text-sm text-green-50 mt-1">
+                    {currentUser?.role === "TEAM_MEMBER" ? "Track your own tasks" : "Add a task to track"}
+                  </div>
+                </button>
               </div>
 
               {/* Team Lead Insights Boxes (Manager Only) */}
@@ -371,10 +373,10 @@ export default function DashboardPage() {
                   />
 
                   <div>
-                    <h2 className="text-2xl font-semibold mb-4 text-gray-900">My Assigned Tasks</h2>
+                    <h2 className="text-2xl font-semibold mb-4 text-gray-900">My Tasks</h2>
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4 transition-colors duration-200">
                       <p className="text-sm text-gray-700">
-                        Only you can change these task statuses. Every update instantly reflects back to your Team Lead.
+                        <strong>Manage your tasks:</strong> View tasks assigned by your Team Lead and your personal tasks. Update task statuses and create sub-tasks to organize your work. All updates and sub-tasks are visible to your Team Lead for tracking progress.
                       </p>
                     </div>
                     <TaskTable 

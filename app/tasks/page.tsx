@@ -90,7 +90,8 @@ export default function TasksPage() {
     fetchProjects();
   }, []);
 
-  const canCreateTasks = currentUser?.role !== "TEAM_MEMBER";
+  // All roles can create tasks (Team Members create personal tasks)
+  const canCreateTasks = true;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 transition-colors duration-200">
@@ -107,35 +108,28 @@ export default function TasksPage() {
           </h1>
 
           {/* Create Task Section */}
-          {canCreateTasks ? (
-            <div className="bg-white border border-blue-200 rounded-2xl p-6 shadow-md transition-colors duration-200 mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  ➕ Create New Task
-                </h2>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  Create Task
-                </button>
-              </div>
-              <p className="text-gray-600 text-sm">
-                {currentUser?.role === "MANAGER" 
-                  ? "Create tasks and assign them to your Team Leads"
-                  : currentUser?.role === "TEAM_LEAD"
-                  ? "Create tasks and assign them to your Team Members"
-                  : "Create and manage your personal tasks"}
-              </p>
+          <div className="bg-white border border-blue-200 rounded-2xl p-6 shadow-md transition-colors duration-200 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                ➕ {currentUser?.role === "TEAM_MEMBER" ? "Create Personal Task" : "Create New Task"}
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                {currentUser?.role === "TEAM_MEMBER" ? "Create Personal Task" : "Create Task"}
+              </button>
             </div>
-          ) : (
-            <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-md transition-colors duration-200 mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Assigned Tasks</h2>
-              <p className="text-gray-600 text-sm">
-                View tasks assigned to you by your Team Lead. You can create sub-tasks for better organization.
-              </p>
-            </div>
-          )}
+            <p className="text-gray-600 text-sm">
+              {currentUser?.role === "MANAGER" 
+                ? "Create tasks and assign them to your Team Leads"
+                : currentUser?.role === "TEAM_LEAD"
+                ? "Create tasks and assign them to your Team Members or create personal tasks for yourself"
+                : currentUser?.role === "TEAM_MEMBER"
+                ? "Create personal tasks for your own use. These tasks won't be visible to your organization."
+                : "Create and manage your personal tasks"}
+            </p>
+          </div>
 
           {/* 🧾 Task List */}
           <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

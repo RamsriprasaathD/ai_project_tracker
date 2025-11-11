@@ -2,11 +2,13 @@
 "use client";
 
 import React, { useState } from "react";
+import DetailModal from "./DetailModal";
 import SubTaskTable from "./SubTaskTable";
 
 export default function TaskTable({ tasks = [], currentUser, onRefresh }: { tasks?: any[], currentUser: any, onRefresh?: () => Promise<void> }) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [selectedTask, setSelectedTask] = useState<any>(null);
 
   async function updateStatus(taskId: string, status: string) {
     try {
@@ -59,11 +61,14 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
           const canManageSubtasks = currentUser?.role === "TEAM_MEMBER" && isAssignedToUser;
           const canUpdateStatus = isAssignedToUser;
           const isExpanded = expandedTasks.has(t.id);
+          
+          // Check if this is a personal task (created by team member for themselves)
+          const isPersonalTask = t.creatorId === currentUser?.id && t.assigneeId === currentUser?.id && !t.projectId;
 
           return (
             <div key={t.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-green-500 transition">
               <div className="flex justify-between items-start">
-                <div className="flex-1">
+                <div className="flex-1 cursor-pointer" onClick={() => setSelectedTask(t)}>
                   <div className="font-semibold text-gray-900 text-lg mb-1">{t.title}</div>
                   <div className="text-sm text-gray-600 mb-2">{t.description || "No description"}</div>
                   
@@ -128,7 +133,12 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
                     >
                       {isExpanded ? "▼" : "▶"} My Sub-tasks {t.subtasks?.length > 0 ? `(${t.subtasks.length})` : ""}
                     </button>
-                    <span className="text-xs text-gray-500 italic">Private - only you can see these</span>
+                    {!isPersonalTask && (
+                      <span className="text-xs text-indigo-600 italic">Visible to your Team Lead</span>
+                    )}
+                    {isPersonalTask && (
+                      <span className="text-xs text-gray-500 italic">Private - Personal Task</span>
+                    )}
                   </div>
                   {isExpanded && (
                     <SubTaskTable parentTaskId={t.id} currentUser={currentUser} onRefresh={onRefresh} />
@@ -139,6 +149,16 @@ export default function TaskTable({ tasks = [], currentUser, onRefresh }: { task
           );
         })}
       </div>
+
+      {/* Detail Modal */}
+      {selectedTask && (
+        <DetailModal
+          type="task"
+          item={selectedTask}
+          currentUser={currentUser}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
     </div>
   );
 }

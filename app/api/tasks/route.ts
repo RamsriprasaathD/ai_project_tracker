@@ -71,22 +71,36 @@ export async function GET(req: Request) {
         orderBy: { createdAt: "desc" },
       });
     } else if (user.role === "TEAM_LEAD") {
-      tasks = await prisma.task.findMany({
+      // Fetch all potential tasks
+      const allTasks = await prisma.task.findMany({
         where: {
           parentTaskId: null,
           OR: [
-            { assigneeId: user.id },
-            { creatorId: user.id },
-            { assignee: { teamLeadId: user.id } },
+            { assigneeId: user.id }, // Tasks assigned to TL
+            { creatorId: user.id }, // Tasks created by TL
+            { assignee: { teamLeadId: user.id } }, // Tasks assigned to team members
           ],
           AND: projectId ? [{ projectId }] : undefined,
         },
         include: includeOptions,
         orderBy: { createdAt: "desc" },
       });
+      
+      // Filter out team member personal tasks (where assignee = creator and no project)
+      tasks = allTasks.filter(task => {
+        // Keep task if it's not a personal task created by team member
+        const isPersonalTask = task.assigneeId === task.creatorId && task.projectId === null && task.assigneeId !== user.id;
+        return !isPersonalTask;
+      });
     } else if (user.role === "TEAM_MEMBER") {
       tasks = await prisma.task.findMany({
-        where: { assigneeId: user.id },
+        where: {
+          parentTaskId: null,
+          OR: [
+            { assigneeId: user.id, creatorId: { not: user.id } }, // Assigned by others (TL)
+            { assigneeId: user.id, creatorId: user.id, projectId: null }, // Personal tasks
+          ],
+        },
         include: includeOptions,
         orderBy: { createdAt: "desc" },
       });

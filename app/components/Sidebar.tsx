@@ -16,7 +16,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="bg-amber-50 text-amber-900 w-60 min-h-screen p-4 border-r border-amber-200 shadow-sm transition-colors duration-200">
+    <aside className="hidden md:block bg-amber-50 text-amber-900 w-60 min-h-screen p-4 border-r border-amber-200 shadow-sm transition-colors duration-200">
       <h2 className="text-xl font-bold text-amber-950 mb-6">Menu</h2>
       <nav className="flex flex-col space-y-2">
         {menu.map((item) => {
