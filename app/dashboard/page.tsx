@@ -18,6 +18,10 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [teamLeads, setTeamLeads] = useState<any[]>([]); // For Manager: Team leads in organization
   const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null); // For TL insights modal
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
   const [stats, setStats] = useState({ totalProjects: 0, totalTasks: 0, completedTasks: 0, inProgressTasks: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -119,6 +123,50 @@ export default function DashboardPage() {
       console.error("Error fetching team leads:", err);
     }
   }, []);
+
+  const handleInviteTeamLead = useCallback(async () => {
+    setInviteError("");
+    setInviteSuccess("");
+
+    if (!inviteEmail.trim()) {
+      setInviteError("Email is required");
+      return;
+    }
+
+    setInviteLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setInviteError("Session expired. Please log in again.");
+        setInviteLoading(false);
+        return;
+      }
+
+      const res = await fetch("/api/team-leads/invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to invite team lead");
+      }
+
+      setInviteSuccess("Invitation sent successfully. The team lead will receive credentials via email.");
+      setInviteEmail("");
+      await fetchTeamLeads();
+    } catch (err: any) {
+      console.error("Invite team lead error:", err);
+      setInviteError(err.message || "Failed to invite team lead");
+    } finally {
+      setInviteLoading(false);
+    }
+  }, [fetchTeamLeads, inviteEmail]);
 
   const calculateStats = useCallback((projectsList: any[], tasksList: any[]) => {
     const completed = tasksList.filter((t: any) => t.status === "DONE").length;
@@ -284,32 +332,64 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* Team Lead Insights Boxes (Manager Only) */}
-              {currentUser?.role === "MANAGER" && teamLeads.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                    Team Lead Performance
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {teamLeads.map((tl) => (
+              {currentUser?.role === "MANAGER" && (
+                <div id="invite-team-lead" className="mb-8 space-y-6">
+                  <div className="bg-white border border-indigo-200 rounded-xl p-6 shadow-sm">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-3">Invite a Team Lead</h2>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Send an invitation email with a temporary password so the team lead can sign in immediately.
+                    </p>
+                    <div className="flex flex-col md:flex-row gap-3">
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="teamlead@example.com"
+                        className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
                       <button
-                        key={tl.id}
-                        onClick={() => setSelectedTeamLead({ id: tl.id, name: tl.name || tl.email })}
-                        className="bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl p-4 text-left transition-all duration-200 shadow-sm hover:shadow-md"
+                        onClick={handleInviteTeamLead}
+                        disabled={inviteLoading}
+                        className="inline-flex items-center justify-center rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 font-medium transition disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 text-lg">{tl.name || tl.email}</h3>
-                          <span className="text-2xl">📊</span>
-                        </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          {tl.tlIdWithinOrg ? `TL-${tl.tlIdWithinOrg}` : "Team Lead"}
-                        </div>
-                        <div className="text-xs text-indigo-600 font-medium">
-                          Click to view detailed insights
-                        </div>
+                        {inviteLoading ? "Sending..." : "Send Invite"}
                       </button>
-                    ))}
+                    </div>
+                    {inviteError && (
+                      <p className="text-sm text-red-600 mt-3">{inviteError}</p>
+                    )}
+                    {inviteSuccess && (
+                      <p className="text-sm text-green-600 mt-3">{inviteSuccess}</p>
+                    )}
                   </div>
+
+                  {teamLeads.length > 0 && (
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+                        Team Lead Performance
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {teamLeads.map((tl) => (
+                          <button
+                            key={tl.id}
+                            onClick={() => setSelectedTeamLead({ id: tl.id, name: tl.name || tl.email })}
+                            className="bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl p-4 text-left transition-all duration-200 shadow-sm hover:shadow-md"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-semibold text-gray-900 text-lg">{tl.name || tl.email}</h3>
+                              <span className="text-2xl">📊</span>
+                            </div>
+                            <div className="text-sm text-gray-600 mb-2">
+                              {tl.tlIdWithinOrg ? `TL-${tl.tlIdWithinOrg}` : "Team Lead"}
+                            </div>
+                            <div className="text-xs text-indigo-600 font-medium">
+                              Click to view detailed insights
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

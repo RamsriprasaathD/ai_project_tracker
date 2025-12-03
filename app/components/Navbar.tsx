@@ -2,14 +2,33 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    const role = localStorage.getItem("userRole");
+    if (role) {
+      setCurrentUserRole(role);
+    }
+
+    const handleStorageChange = () => {
+      const updatedRole = localStorage.getItem("userRole");
+      setCurrentUserRole(updatedRole);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -47,7 +66,43 @@ export default function Navbar() {
               {item.label}
             </button>
           ))}
-          
+          {(["/dashboard", "/projects", "/tasks"].includes(pathname) || pathname.startsWith("/projects/")) && (
+            <div className="relative">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setDropdownOpen((prev) => !prev)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-indigo-600 transition"
+                >
+                  Manager
+                </button>
+              </div>
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-3 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                  <Link
+                    href="/projects"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                  >
+                    Manage Projects
+                  </Link>
+                  <Link
+                    href="/tasks"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                  >
+                    Manage Tasks
+                  </Link>
+                  {currentUserRole === "MANAGER" && (
+                    <Link
+                      href="/dashboard#invite-team-lead"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Invite Team Lead
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md ml-2"
@@ -102,7 +157,6 @@ export default function Navbar() {
               {item.label}
             </button>
           ))}
-          
           <button
             onClick={() => {
               handleLogout();
